@@ -12,6 +12,47 @@ from app.database.models import Subscription
 logger = structlog.get_logger(__name__)
 
 
+def _to_aware_utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
+def is_subscription_active(subscription: Subscription | None, now: datetime | None = None) -> bool:
+    """Single source of truth for active subscription check."""
+    if not subscription:
+        return False
+
+    current_time = now or datetime.now(UTC)
+    if subscription.status != 'active':
+        return False
+
+    expires_at = _to_aware_utc(subscription.end_date)
+    if not expires_at:
+        return False
+
+    if getattr(subscription, 'is_cancelled', False):
+        return False
+
+    return expires_at > current_time
+
+
+def mark_subscription_expired_if_needed(subscription: Subscription | None, now: datetime | None = None) -> bool:
+    """Normalize stale active subscriptions that already expired."""
+    if not subscription:
+        return False
+
+    current_time = now or datetime.now(UTC)
+    expires_at = _to_aware_utc(subscription.end_date)
+    if subscription.status == 'active' and expires_at is not None and expires_at <= current_time:
+        subscription.status = 'expired'
+        return True
+
+    return False
+
+
 async def ensure_single_subscription(db: AsyncSession, user_id: int) -> Subscription | None:
     result = await db.execute(
         select(Subscription).where(Subscription.user_id == user_id).order_by(Subscription.created_at.desc())

@@ -20,6 +20,7 @@ from app.database.models import (
     UserStatus,
 )
 from app.utils.pricing_utils import calculate_months_from_days, get_remaining_months
+from app.utils.subscription_utils import is_subscription_active
 from app.utils.timezone import format_local_datetime
 
 
@@ -40,12 +41,7 @@ def is_active_paid_subscription(subscription: Subscription | None) -> bool:
     """Return True if subscription is active, paid (non-trial), and not expired."""
     if not subscription:
         return False
-    return (
-        not subscription.is_trial
-        and subscription.status == SubscriptionStatus.ACTIVE.value
-        and subscription.end_date is not None
-        and subscription.end_date > datetime.now(UTC)
-    )
+    return not subscription.is_trial and is_subscription_active(subscription)
 
 
 async def get_subscription_by_user_id(db: AsyncSession, user_id: int) -> Subscription | None:

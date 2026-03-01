@@ -39,6 +39,7 @@ from app.services.user_cart_service import user_cart_service
 from app.utils.cache import RateLimitCache, cache, cache_key
 from app.utils.pricing_utils import format_period_description
 from app.utils.promo_offer import get_user_active_promo_discount_percent
+from app.utils.subscription_utils import is_subscription_active, mark_subscription_expired_if_needed
 
 from ..dependencies import get_cabinet_db, get_current_cabinet_user
 from ..schemas.subscription import (
@@ -260,7 +261,18 @@ async def get_subscription(
 
     if not fresh_user or not fresh_user.subscription:
         # Return 200 with has_subscription: false instead of 404
-        return SubscriptionStatusResponse(has_subscription=False, subscription=None)
+        return SubscriptionStatusResponse(
+            has_subscription=False,
+            has_active_subscription=False,
+            can_invite_family=False,
+            subscription=None,
+            active_subscription=None,
+        )
+
+    status_updated = mark_subscription_expired_if_needed(fresh_user.subscription)
+    if status_updated:
+        await db.commit()
+        await db.refresh(fresh_user.subscription)
 
     # Load tariff for daily subscription check and tariff name
     tariff_name = None
@@ -315,7 +327,24 @@ async def get_subscription(
         )
 
     subscription_data = _subscription_to_response(fresh_user.subscription, servers, tariff_name, traffic_purchases_data)
-    return SubscriptionStatusResponse(has_subscription=True, subscription=subscription_data)
+    has_active_subscription = is_subscription_active(fresh_user.subscription)
+    active_subscription = subscription_data if has_active_subscription else None
+
+    tariff = getattr(fresh_user.subscription, 'tariff', None)
+    can_invite_family = bool(
+        has_active_subscription
+        and tariff
+        and tariff.family_enabled
+        and int(tariff.family_max_members or 0) > 1
+    )
+
+    return SubscriptionStatusResponse(
+        has_subscription=True,
+        has_active_subscription=has_active_subscription,
+        can_invite_family=can_invite_family,
+        subscription=subscription_data,
+        active_subscription=active_subscription,
+    )
 
 
 @router.get('/renewal-options', response_model=list[RenewalOptionResponse])
@@ -929,6 +958,16 @@ async def purchase_devices_legacy(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail='No subscription found',
+        )
+
+    if mark_subscription_expired_if_needed(user.subscription):
+        await db.commit()
+        await db.refresh(user, ['subscription'])
+
+    if not is_subscription_active(user.subscription):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='No active subscription found',
         )
 
     price_per_device = settings.PRICE_PER_DEVICE
@@ -2181,7 +2220,11 @@ async def purchase_devices(
                 detail='У вас нет активной подписки',
             )
 
-        if subscription.status not in ['active', 'trial']:
+        if mark_subscription_expired_if_needed(subscription):
+            await db.commit()
+            await db.refresh(subscription)
+
+        if not is_subscription_active(subscription):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail='Ваша подписка неактивна',
@@ -2399,7 +2442,11 @@ async def save_traffic_cart(
             detail='У вас нет активной подписки',
         )
 
-    if subscription.status not in ['active', 'trial']:
+    if mark_subscription_expired_if_needed(subscription):
+        await db.commit()
+        await db.refresh(subscription)
+
+    if not is_subscription_active(subscription):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Ваша подписка неактивна',
@@ -2513,7 +2560,11 @@ async def save_devices_cart(
             detail='У вас нет активной подписки',
         )
 
-    if subscription.status not in ['active', 'trial']:
+    if mark_subscription_expired_if_needed(subscription):
+        await db.commit()
+        await db.refresh(subscription)
+
+    if not is_subscription_active(subscription):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Ваша подписка неактивна',
@@ -2584,7 +2635,11 @@ async def get_device_price(
     await db.refresh(user, ['subscription'])
     subscription = user.subscription
 
-    if not subscription or subscription.status not in ['active', 'trial']:
+    if subscription and mark_subscription_expired_if_needed(subscription):
+        await db.commit()
+        await db.refresh(subscription)
+
+    if not subscription or not is_subscription_active(subscription):
         return {
             'available': False,
             'reason': 'Нет активной подписки',
@@ -3095,6 +3150,16 @@ async def get_connection_link(
             detail='No subscription found',
         )
 
+    if mark_subscription_expired_if_needed(user.subscription):
+        await db.commit()
+        await db.refresh(user, ['subscription'])
+
+    if not is_subscription_active(user.subscription):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='No active subscription',
+        )
+
     subscription_url = user.subscription.subscription_url
     if not subscription_url:
         raise HTTPException(
@@ -3203,8 +3268,12 @@ async def get_app_config(
     subscription_url = None
     subscription_crypto_link = None
     if user.subscription:
-        subscription_url = user.subscription.subscription_url
-        subscription_crypto_link = user.subscription.subscription_crypto_link
+        if mark_subscription_expired_if_needed(user.subscription):
+            await db.commit()
+            await db.refresh(user, ['subscription'])
+        if is_subscription_active(user.subscription):
+            subscription_url = user.subscription.subscription_url
+            subscription_crypto_link = user.subscription.subscription_crypto_link
 
     config = await _load_app_config_async()
 

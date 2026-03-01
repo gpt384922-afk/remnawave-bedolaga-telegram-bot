@@ -17,6 +17,7 @@ from sqlalchemy.orm import selectinload
 from app.config import settings
 from app.database.crud.user_notification import create_user_notification
 from app.database.models import FamilyDevice, FamilyGroup, FamilyInvite, FamilyMember, Subscription, Tariff, User
+from app.utils.subscription_utils import is_subscription_active
 
 
 logger = structlog.get_logger(__name__)
@@ -104,7 +105,12 @@ async def _in_active_family(db: AsyncSession, user_id: int, exclude_group_id: in
     owner_query = select(FamilyGroup.id).where(FamilyGroup.owner_user_id == user_id)
     if exclude_group_id is not None:
         owner_query = owner_query.where(FamilyGroup.id != exclude_group_id)
-    return (await db.execute(owner_query.limit(1))).scalar_one_or_none() is not None
+    owner_group_id = (await db.execute(owner_query.limit(1))).scalar_one_or_none()
+    if owner_group_id is None:
+        return False
+
+    owner_user = await _load_user(db, user_id)
+    return is_subscription_active(owner_user.subscription if owner_user else None)
 
 
 async def get_access_context(db: AsyncSession, user: User) -> FamilyAccessContext:
@@ -115,17 +121,28 @@ async def get_access_context(db: AsyncSession, user: User) -> FamilyAccessContex
     membership = await _active_membership(db, requester.id)
     if membership:
         owner = await _load_user(db, membership.family_group.owner_user_id)
+        owner_subscription = owner.subscription if owner else None
+        if owner and is_subscription_active(owner_subscription):
+            return FamilyAccessContext(
+                requester=requester,
+                owner=owner,
+                subscription=owner_subscription,
+                tariff=owner_subscription.tariff if owner_subscription else None,
+                group=membership.family_group,
+                role='member',
+            )
+
         return FamilyAccessContext(
             requester=requester,
-            owner=owner,
-            subscription=owner.subscription if owner else None,
-            tariff=owner.subscription.tariff if owner and owner.subscription else None,
-            group=membership.family_group,
-            role='member',
+            owner=None,
+            subscription=None,
+            tariff=None,
+            group=None,
+            role=None,
         )
 
     group = await _owner_group(db, requester.id)
-    if group:
+    if group and is_subscription_active(requester.subscription):
         return FamilyAccessContext(
             requester=requester,
             owner=requester,
@@ -135,7 +152,7 @@ async def get_access_context(db: AsyncSession, user: User) -> FamilyAccessContex
             role='owner',
         )
 
-    if requester.subscription:
+    if is_subscription_active(requester.subscription):
         return FamilyAccessContext(
             requester=requester,
             owner=requester,
@@ -151,6 +168,15 @@ async def get_access_context(db: AsyncSession, user: User) -> FamilyAccessContex
 def _validate_owner_family_enabled(subscription: Subscription | None, tariff: Tariff | None) -> int:
     if not subscription or not tariff:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='No active subscription with tariff')
+    if not is_subscription_active(subscription):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                'error_code': 'SUBSCRIPTION_EXPIRED',
+                'message': 'Subscription is expired or inactive',
+                'message_ru': 'Подписка истекла',
+            },
+        )
     if not tariff.family_enabled or int(tariff.family_max_members or 0) <= 1:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Family access is not available for your tariff')
     return int(tariff.family_max_members or 0)
@@ -429,7 +455,7 @@ async def create_family_invite(db: AsyncSession, owner_user: User, tg_username: 
     if invitee.id == owner.id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='You cannot invite yourself')
     invitee_subscription = getattr(invitee, 'subscription', None)
-    if invitee_subscription and invitee_subscription.is_active:
+    if is_subscription_active(invitee_subscription):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={

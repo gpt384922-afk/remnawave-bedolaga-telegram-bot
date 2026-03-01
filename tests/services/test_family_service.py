@@ -31,7 +31,14 @@ class FakeScalarResult:
 
 def _make_owner(*, family_enabled: bool, family_max_members: int):
     tariff = SimpleNamespace(family_enabled=family_enabled, family_max_members=family_max_members)
-    subscription = SimpleNamespace(id=101, tariff=tariff, device_limit=3)
+    subscription = SimpleNamespace(
+        id=101,
+        tariff=tariff,
+        device_limit=3,
+        status='active',
+        end_date=datetime.now(UTC) + timedelta(days=7),
+        is_cancelled=False,
+    )
     owner = SimpleNamespace(
         id=1,
         username='owner',
@@ -107,7 +114,11 @@ async def test_create_family_invite_rejected_when_invitee_has_active_subscriptio
         id=2,
         username='member',
         telegram_id=222,
-        subscription=SimpleNamespace(is_active=True),
+        subscription=SimpleNamespace(
+            status='active',
+            end_date=datetime.now(UTC) + timedelta(days=5),
+            is_cancelled=False,
+        ),
     )
 
     monkeypatch.setattr(family_service, '_load_user', AsyncMock(return_value=owner))
@@ -122,6 +133,22 @@ async def test_create_family_invite_rejected_when_invitee_has_active_subscriptio
     assert isinstance(exc.value.detail, dict)
     assert exc.value.detail.get('error_code') == 'INVITEE_HAS_ACTIVE_SUBSCRIPTION'
     assert exc.value.detail.get('message_ru') == 'Нельзя пригласить пользователя с активной подпиской'
+
+
+async def test_create_family_invite_rejected_when_owner_subscription_expired(monkeypatch):
+    owner = _make_owner(family_enabled=True, family_max_members=3)
+    owner.subscription.end_date = datetime.now(UTC) - timedelta(minutes=1)
+    owner.subscription.status = 'active'
+    monkeypatch.setattr(family_service, '_load_user', AsyncMock(return_value=owner))
+
+    db = AsyncMock(spec=AsyncSession)
+
+    with pytest.raises(HTTPException) as exc:
+        await family_service.create_family_invite(db, SimpleNamespace(id=owner.id), '@member')
+
+    assert exc.value.status_code == 403
+    assert isinstance(exc.value.detail, dict)
+    assert exc.value.detail.get('error_code') == 'SUBSCRIPTION_EXPIRED'
 
 
 async def test_get_family_overview_filters_members_to_active_or_invited(monkeypatch):

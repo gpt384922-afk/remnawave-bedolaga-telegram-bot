@@ -70,7 +70,10 @@ class SubscriptionStatusResponse(BaseModel):
     """Response for subscription status endpoint - handles users with and without subscription."""
 
     has_subscription: bool
+    has_active_subscription: bool = False
     subscription: SubscriptionData | None = None
+    active_subscription: SubscriptionData | None = None
+    can_invite_family: bool = False
 
 
 class RenewalOptionResponse(BaseModel):
