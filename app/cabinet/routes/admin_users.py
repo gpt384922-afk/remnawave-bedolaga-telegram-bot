@@ -6,6 +6,7 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import Integer, and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.database.crud.campaign import get_campaign_registration_by_user
 from app.database.crud.subscription import (
@@ -25,6 +26,8 @@ from app.database.crud.user import (
     subtract_user_balance,
 )
 from app.database.models import (
+    FamilyGroup,
+    FamilyMember,
     PromoGroup,
     Subscription,
     SubscriptionServer,
@@ -83,6 +86,8 @@ from ..schemas.users import (
     UserPanelInfoResponse,
     UserPromoGroupInfo,
     UserReferralInfo,
+    UserFamilyMemberInfo,
+    UserFamilyOwnerInfo,
     UsersListResponse,
     UsersStatsResponse,
     UserStatusEnum,
@@ -572,6 +577,64 @@ async def get_user_detail(
         referred_by_username=referred_by_username,
     )
 
+    family_as_owner: list[UserFamilyMemberInfo] = []
+    family_as_member: UserFamilyOwnerInfo | None = None
+
+    owner_group = (
+        (
+            await db.execute(
+                select(FamilyGroup).where(FamilyGroup.owner_user_id == user.id)
+            )
+        )
+        .scalars()
+        .first()
+    )
+    if owner_group:
+        owner_members = (
+            (
+                await db.execute(
+                    select(FamilyMember)
+                    .where(FamilyMember.family_group_id == owner_group.id)
+                    .options(selectinload(FamilyMember.user))
+                    .order_by(FamilyMember.invited_at.desc())
+                )
+            )
+            .scalars()
+            .all()
+        )
+        family_as_owner = [
+            UserFamilyMemberInfo(
+                user_id=member.user_id,
+                username=member.user.username if member.user else None,
+                display_name=member.user.full_name if member.user else f'User#{member.user_id}',
+                status=member.status,
+                invited_at=member.invited_at,
+                accepted_at=member.accepted_at,
+            )
+            for member in owner_members
+        ]
+
+    active_membership = (
+        (
+            await db.execute(
+                select(FamilyMember).where(
+                    FamilyMember.user_id == user.id,
+                    FamilyMember.status == 'active',
+                ).options(selectinload(FamilyMember.family_group))
+            )
+        )
+        .scalars()
+        .first()
+    )
+    if active_membership:
+        family_owner = await get_user_by_id(db, active_membership.family_group.owner_user_id)
+        if family_owner:
+            family_as_member = UserFamilyOwnerInfo(
+                owner_user_id=family_owner.id,
+                owner_username=family_owner.username,
+                owner_display_name=family_owner.full_name,
+            )
+
     # Get recent transactions
     transactions_q = (
         select(Transaction).where(Transaction.user_id == user.id).order_by(Transaction.created_at.desc()).limit(20)
@@ -623,6 +686,8 @@ async def get_user_detail(
         subscription=subscription_info,
         promo_group=promo_group_info,
         referral=referral_info,
+        family_as_owner=family_as_owner,
+        family_as_member=family_as_member,
         total_spent_kopeks=user_stats.get('total_spent', 0),
         purchase_count=user_stats.get('purchase_count', 0),
         used_promocodes=user.used_promocodes,

@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.database.crud.user_notification import get_user_notifications
 from app.database.models import User
 
 from ..dependencies import get_cabinet_db, get_current_cabinet_user
@@ -141,11 +142,24 @@ async def get_notification_history(
     db: AsyncSession = Depends(get_cabinet_db),
 ):
     """Get user's notification history."""
-    # For now, return empty list - notification history can be implemented later
-    # when there's a notification log table
+    rows, total = await get_user_notifications(db, user_id=user.id, limit=limit, offset=offset)
+
+    notifications = [
+        {
+            'id': row.id,
+            'type': row.notification_type,
+            'title': row.title,
+            'body': row.body,
+            'payload': row.payload or {},
+            'read_at': row.read_at,
+            'created_at': row.created_at,
+        }
+        for row in rows
+    ]
+
     return {
-        'notifications': [],
-        'total': 0,
+        'notifications': notifications,
+        'total': total,
         'limit': limit,
         'offset': offset,
     }

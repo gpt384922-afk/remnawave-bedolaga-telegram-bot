@@ -169,6 +169,8 @@ async def create_tariff(
     tier_level: int = 1,
     is_trial_available: bool = False,
     allow_traffic_topup: bool = True,
+    family_enabled: bool = False,
+    family_max_members: int = 0,
     promo_group_ids: list[int] | None = None,
     traffic_topup_enabled: bool = False,
     traffic_topup_packages: dict[str, int] | None = None,
@@ -206,6 +208,8 @@ async def create_tariff(
         tier_level=max(1, tier_level),
         is_trial_available=is_trial_available,
         allow_traffic_topup=allow_traffic_topup,
+        family_enabled=family_enabled,
+        family_max_members=max(0, family_max_members),
         traffic_topup_enabled=traffic_topup_enabled,
         traffic_topup_packages=traffic_topup_packages or {},
         max_topup_traffic_gb=max(0, max_topup_traffic_gb),
@@ -270,6 +274,8 @@ async def update_tariff(
     tier_level: int | None = None,
     is_trial_available: bool | None = None,
     allow_traffic_topup: bool | None = None,
+    family_enabled: bool | None = None,
+    family_max_members: int | None = None,
     promo_group_ids: list[int] | None = None,
     traffic_topup_enabled: bool | None = None,
     traffic_topup_packages: dict[str, int] | None = None,
@@ -314,6 +320,10 @@ async def update_tariff(
         tariff.server_traffic_limits = server_traffic_limits
     if allow_traffic_topup is not None:
         tariff.allow_traffic_topup = allow_traffic_topup
+    if family_enabled is not None:
+        tariff.family_enabled = family_enabled
+    if family_max_members is not None:
+        tariff.family_max_members = max(0, family_max_members)
     if period_prices is not None:
         tariff.period_prices = _normalize_period_prices(period_prices)
     if tier_level is not None:

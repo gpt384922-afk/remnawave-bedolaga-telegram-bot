@@ -21,11 +21,12 @@ from app.database.crud.subscription import (
 from app.database.crud.tariff import get_tariff_by_id, get_tariffs_for_user
 from app.database.crud.transaction import create_transaction
 from app.database.crud.user import subtract_user_balance
-from app.database.models import ServerSquad, Subscription, Tariff, TransactionType, User
+from app.database.models import FamilyDevice, ServerSquad, Subscription, Tariff, TransactionType, User
 from app.services.notification_delivery_service import (
     NotificationType,
     notification_delivery_service,
 )
+from app.services.family_service import get_access_context, sync_family_devices_from_panel
 from app.services.remnawave_service import RemnaWaveService
 from app.services.subscription_purchase_service import (
     MiniAppSubscriptionPurchaseService,
@@ -3305,27 +3306,42 @@ async def get_devices(
     """Get list of connected devices."""
     from app.services.remnawave_service import RemnaWaveService
 
-    await db.refresh(user, ['subscription'])
+    ctx = await get_access_context(db, user)
+    owner = ctx.owner
+    subscription = ctx.subscription
+    family_group = ctx.group
+    role = ctx.role
 
-    if not user.subscription:
+    if not owner or not subscription:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail='No subscription found',
         )
 
-    if not user.remnawave_uuid:
+    if not owner.remnawave_uuid:
         return {
             'devices': [],
             'total': 0,
-            'device_limit': user.subscription.device_limit or 1,
+            'device_limit': subscription.device_limit or 1,
+            'family_role': role,
+            'remaining': subscription.device_limit or 1,
         }
 
     try:
         service = RemnaWaveService()
         async with service.get_api_client() as api:
-            response = await api.get_user_devices(user.remnawave_uuid)
+            response = await api.get_user_devices(owner.remnawave_uuid)
 
             devices_list = response.get('devices', [])
+            ownership: dict[str, Any] = {}
+            if family_group:
+                ownership = await sync_family_devices_from_panel(
+                    db,
+                    family_group_id=family_group.id,
+                    actor_user_id=user.id,
+                    panel_devices=devices_list,
+                )
+
             formatted_devices = []
             for device in devices_list:
                 hwid = device.get('hwid') or device.get('deviceId') or device.get('id')
@@ -3333,19 +3349,33 @@ async def get_devices(
                 model = device.get('deviceModel') or device.get('model') or device.get('name') or 'Unknown'
                 created_at = device.get('updatedAt') or device.get('lastSeen') or device.get('createdAt')
 
+                owner_user_id = None
+                can_delete = True
+                if family_group and hwid:
+                    row = ownership.get(hwid)
+                    owner_user_id = row.owner_user_id if row else None
+                    if role == 'member':
+                        can_delete = owner_user_id == user.id
+
                 formatted_devices.append(
                     {
                         'hwid': hwid,
                         'platform': platform,
                         'device_model': model,
                         'created_at': created_at,
+                        'owner_user_id': owner_user_id,
+                        'can_delete': can_delete,
                     }
                 )
 
+            total_count = response.get('total', len(formatted_devices))
+            limit = subscription.device_limit or 1
             return {
                 'devices': formatted_devices,
-                'total': response.get('total', len(formatted_devices)),
-                'device_limit': user.subscription.device_limit or 1,
+                'total': total_count,
+                'device_limit': limit,
+                'family_role': role,
+                'remaining': max(0, limit - total_count),
             }
 
     except Exception as e:
@@ -3353,7 +3383,9 @@ async def get_devices(
         return {
             'devices': [],
             'total': 0,
-            'device_limit': user.subscription.device_limit or 1,
+            'device_limit': subscription.device_limit or 1,
+            'family_role': role,
+            'remaining': subscription.device_limit or 1,
         }
 
 
@@ -3366,25 +3398,65 @@ async def delete_device(
     """Delete a specific device by HWID."""
     from app.services.remnawave_service import RemnaWaveService
 
-    await db.refresh(user, ['subscription'])
+    ctx = await get_access_context(db, user)
+    owner = ctx.owner
+    subscription = ctx.subscription
+    family_group = ctx.group
+    role = ctx.role
 
-    if not user.subscription:
+    if not owner or not subscription:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail='No subscription found',
         )
 
-    if not user.remnawave_uuid:
+    if not owner.remnawave_uuid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='User UUID not found',
         )
 
+    if family_group and role == 'member':
+        ownership = (
+            (
+                await db.execute(
+                    select(FamilyDevice).where(
+                        FamilyDevice.family_group_id == family_group.id,
+                        FamilyDevice.hwid == hwid,
+                    )
+                )
+            )
+            .scalars()
+            .first()
+        )
+        if not ownership or ownership.owner_user_id != user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail='Family member cannot delete owner devices',
+            )
+
     try:
         service = RemnaWaveService()
         async with service.get_api_client() as api:
-            delete_data = {'userUuid': user.remnawave_uuid, 'hwid': hwid}
+            delete_data = {'userUuid': owner.remnawave_uuid, 'hwid': hwid}
             await api._make_request('POST', '/api/hwid/devices/delete', data=delete_data)
+
+            if family_group:
+                row = (
+                    (
+                        await db.execute(
+                            select(FamilyDevice).where(
+                                FamilyDevice.family_group_id == family_group.id,
+                                FamilyDevice.hwid == hwid,
+                            )
+                        )
+                    )
+                    .scalars()
+                    .first()
+                )
+                if row:
+                    await db.delete(row)
+                    await db.commit()
 
             return {
                 'success': True,
@@ -3408,15 +3480,19 @@ async def delete_all_devices(
     """Delete all connected devices."""
     from app.services.remnawave_service import RemnaWaveService
 
-    await db.refresh(user, ['subscription'])
+    ctx = await get_access_context(db, user)
+    owner = ctx.owner
+    subscription = ctx.subscription
+    family_group = ctx.group
+    role = ctx.role
 
-    if not user.subscription:
+    if not owner or not subscription:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail='No subscription found',
         )
 
-    if not user.remnawave_uuid:
+    if not owner.remnawave_uuid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='User UUID not found',
@@ -3426,7 +3502,7 @@ async def delete_all_devices(
         service = RemnaWaveService()
         async with service.get_api_client() as api:
             # Get all devices first
-            response = await api._make_request('GET', f'/api/hwid/devices/{user.remnawave_uuid}')
+            response = await api._make_request('GET', f'/api/hwid/devices/{owner.remnawave_uuid}')
 
             if not response or 'response' not in response:
                 return {
@@ -3443,16 +3519,47 @@ async def delete_all_devices(
                     'deleted_count': 0,
                 }
 
+            allowed_hwids: set[str] | None = None
+            if family_group and role == 'member':
+                own_rows = (
+                    (
+                        await db.execute(
+                            select(FamilyDevice.hwid).where(
+                                FamilyDevice.family_group_id == family_group.id,
+                                FamilyDevice.owner_user_id == user.id,
+                            )
+                        )
+                    )
+                    .all()
+                )
+                allowed_hwids = {str(row[0]) for row in own_rows}
+
             deleted_count = 0
             for device in devices_list:
                 device_hwid = device.get('hwid')
                 if device_hwid:
+                    if allowed_hwids is not None and device_hwid not in allowed_hwids:
+                        continue
                     try:
-                        delete_data = {'userUuid': user.remnawave_uuid, 'hwid': device_hwid}
+                        delete_data = {'userUuid': owner.remnawave_uuid, 'hwid': device_hwid}
                         await api._make_request('POST', '/api/hwid/devices/delete', data=delete_data)
                         deleted_count += 1
                     except Exception as device_error:
                         logger.error('Error deleting device', device_hwid=device_hwid, device_error=device_error)
+
+            if family_group:
+                if allowed_hwids is None:
+                    await db.execute(
+                        FamilyDevice.__table__.delete().where(FamilyDevice.family_group_id == family_group.id)
+                    )
+                else:
+                    await db.execute(
+                        FamilyDevice.__table__.delete().where(
+                            FamilyDevice.family_group_id == family_group.id,
+                            FamilyDevice.owner_user_id == user.id,
+                        )
+                    )
+                await db.commit()
 
             return {
                 'success': True,

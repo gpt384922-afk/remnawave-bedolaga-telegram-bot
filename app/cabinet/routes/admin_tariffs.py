@@ -126,6 +126,8 @@ async def list_tariffs(
                 is_daily=tariff.is_daily,
                 daily_price_kopeks=tariff.daily_price_kopeks,
                 allow_traffic_topup=tariff.allow_traffic_topup,
+                family_enabled=tariff.family_enabled,
+                family_max_members=tariff.family_max_members,
                 traffic_limit_gb=tariff.traffic_limit_gb,
                 device_limit=tariff.device_limit,
                 tier_level=tariff.tier_level,
@@ -208,6 +210,8 @@ async def get_tariff(
         is_active=tariff.is_active,
         is_trial_available=tariff.is_trial_available,
         allow_traffic_topup=tariff.allow_traffic_topup,
+        family_enabled=tariff.family_enabled,
+        family_max_members=tariff.family_max_members,
         traffic_topup_enabled=tariff.traffic_topup_enabled,
         traffic_topup_packages=tariff.traffic_topup_packages or {},
         max_topup_traffic_gb=tariff.max_topup_traffic_gb,
@@ -250,6 +254,12 @@ async def create_new_tariff(
     db: AsyncSession = Depends(get_cabinet_db),
 ):
     """Create a new tariff."""
+    if request.family_enabled and request.family_max_members < 2:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='family_max_members must be at least 2 when family access is enabled',
+        )
+
     period_prices_dict = _period_prices_to_dict(request.period_prices)
 
     # Преобразуем ServerTrafficLimit в dict для хранения
@@ -265,6 +275,8 @@ async def create_new_tariff(
         description=request.description,
         is_active=request.is_active,
         allow_traffic_topup=request.allow_traffic_topup,
+        family_enabled=request.family_enabled,
+        family_max_members=request.family_max_members,
         traffic_topup_enabled=request.traffic_topup_enabled,
         traffic_topup_packages=request.traffic_topup_packages,
         max_topup_traffic_gb=request.max_topup_traffic_gb,
@@ -328,6 +340,18 @@ async def update_existing_tariff(
         updates['is_active'] = request.is_active
     if request.allow_traffic_topup is not None:
         updates['allow_traffic_topup'] = request.allow_traffic_topup
+    if request.family_enabled is not None:
+        updates['family_enabled'] = request.family_enabled
+    if request.family_max_members is not None:
+        updates['family_max_members'] = request.family_max_members
+
+    effective_family_enabled = updates.get('family_enabled', tariff.family_enabled)
+    effective_family_max_members = updates.get('family_max_members', tariff.family_max_members)
+    if effective_family_enabled and int(effective_family_max_members or 0) < 2:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='family_max_members must be at least 2 when family access is enabled',
+        )
     if request.traffic_topup_enabled is not None:
         updates['traffic_topup_enabled'] = request.traffic_topup_enabled
     if request.traffic_topup_packages is not None:
@@ -395,6 +419,17 @@ async def update_existing_tariff(
     await load_period_prices_from_db(db)
 
     return await get_tariff(tariff_id, admin, db)
+
+
+@router.patch('/{tariff_id}', response_model=TariffDetailResponse)
+async def patch_existing_tariff(
+    tariff_id: int,
+    request: TariffUpdateRequest,
+    admin: User = Depends(require_permission('tariffs:edit')),
+    db: AsyncSession = Depends(get_cabinet_db),
+):
+    """Patch tariff fields (alias for PUT update)."""
+    return await update_existing_tariff(tariff_id, request, admin, db)
 
 
 @router.delete('/{tariff_id}')

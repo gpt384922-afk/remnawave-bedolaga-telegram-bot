@@ -33,6 +33,7 @@ from .auth import router as auth_router
 from .balance import router as balance_router
 from .branding import router as branding_router
 from .contests import router as contests_router
+from .family import router as family_router
 from .info import router as info_router
 from .media import router as media_router
 from .notifications import router as notifications_router
@@ -60,6 +61,7 @@ router = APIRouter(prefix='/cabinet', tags=['Cabinet'])
 router.include_router(auth_router)
 router.include_router(oauth_router)
 router.include_router(subscription_router)
+router.include_router(family_router)
 router.include_router(balance_router)
 router.include_router(referral_router)
 router.include_router(partner_application_router)

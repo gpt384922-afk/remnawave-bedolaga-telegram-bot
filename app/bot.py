@@ -9,6 +9,7 @@ from app.handlers import (
     balance,
     common,
     contests as user_contests,
+    family,
     menu,
     polls as user_polls,
     promocode,
@@ -198,6 +199,7 @@ async def setup_bot() -> tuple[Bot, Dispatcher]:
     admin_blocked_users.register_handlers(dp)
     admin_required_channels.register_handlers(dp)
     register_channel_member_handlers(dp)
+    family.register_handlers(dp)
     common.register_handlers(dp)
     register_stars_handlers(dp)
     user_contests.register_handlers(dp)

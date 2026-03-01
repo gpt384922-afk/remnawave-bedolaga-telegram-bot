@@ -152,6 +152,21 @@ class UserReferralInfo(BaseModel):
     referred_by_username: str | None = None
 
 
+class UserFamilyMemberInfo(BaseModel):
+    user_id: int
+    username: str | None = None
+    display_name: str
+    status: str
+    invited_at: datetime | None = None
+    accepted_at: datetime | None = None
+
+
+class UserFamilyOwnerInfo(BaseModel):
+    owner_user_id: int
+    owner_username: str | None = None
+    owner_display_name: str
+
+
 class UserDetailResponse(BaseModel):
     """Detailed user information."""
 
@@ -184,6 +199,10 @@ class UserDetailResponse(BaseModel):
 
     # Referral
     referral: UserReferralInfo
+
+    # Family
+    family_as_owner: list[UserFamilyMemberInfo] = []
+    family_as_member: UserFamilyOwnerInfo | None = None
 
     # Stats
     total_spent_kopeks: int = 0

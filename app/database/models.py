@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, time, timedelta
+﻿from datetime import UTC, datetime, time, timedelta
 
 
 def _aware(dt: datetime | None) -> datetime | None:
@@ -73,7 +73,7 @@ server_squad_promo_groups = Table(
 )
 
 
-# M2M таблица для связи тарифов с промогруппами (доступ к тарифу)
+# M2M С‚Р°Р±Р»РёС†Р° РґР»СЏ СЃРІСЏР·Рё С‚Р°СЂРёС„РѕРІ СЃ РїСЂРѕРјРѕРіСЂСѓРїРїР°РјРё (РґРѕСЃС‚СѓРї Рє С‚Р°СЂРёС„Сѓ)
 tariff_promo_groups = Table(
     'tariff_promo_groups',
     Base.metadata,
@@ -92,7 +92,7 @@ tariff_promo_groups = Table(
 )
 
 
-# M2M таблица для связи платёжных методов с промогруппами (условия показа)
+# M2M С‚Р°Р±Р»РёС†Р° РґР»СЏ СЃРІСЏР·Рё РїР»Р°С‚С‘Р¶РЅС‹С… РјРµС‚РѕРґРѕРІ СЃ РїСЂРѕРјРѕРіСЂСѓРїРїР°РјРё (СѓСЃР»РѕРІРёСЏ РїРѕРєР°Р·Р°)
 payment_method_promo_groups = Table(
     'payment_method_promo_groups',
     Base.metadata,
@@ -139,7 +139,7 @@ class PromoCodeType(Enum):
     SUBSCRIPTION_DAYS = 'subscription_days'
     TRIAL_SUBSCRIPTION = 'trial_subscription'
     PROMO_GROUP = 'promo_group'
-    DISCOUNT = 'discount'  # Одноразовая процентная скидка (balance_bonus_kopeks = процент, subscription_days = часы)
+    DISCOUNT = 'discount'  # РћРґРЅРѕСЂР°Р·РѕРІР°СЏ РїСЂРѕС†РµРЅС‚РЅР°СЏ СЃРєРёРґРєР° (balance_bonus_kopeks = РїСЂРѕС†РµРЅС‚, subscription_days = С‡Р°СЃС‹)
 
 
 class PaymentMethod(Enum):
@@ -171,7 +171,7 @@ class MainMenuButtonVisibility(Enum):
 
 
 class WheelPrizeType(Enum):
-    """Типы призов на колесе удачи."""
+    """РўРёРїС‹ РїСЂРёР·РѕРІ РЅР° РєРѕР»РµСЃРµ СѓРґР°С‡Рё."""
 
     SUBSCRIPTION_DAYS = 'subscription_days'
     BALANCE_BONUS = 'balance_bonus'
@@ -181,7 +181,7 @@ class WheelPrizeType(Enum):
 
 
 class WheelSpinPaymentType(Enum):
-    """Способы оплаты спина колеса."""
+    """РЎРїРѕСЃРѕР±С‹ РѕРїР»Р°С‚С‹ СЃРїРёРЅР° РєРѕР»РµСЃР°."""
 
     TELEGRAM_STARS = 'telegram_stars'
     SUBSCRIPTION_DAYS = 'subscription_days'
@@ -233,7 +233,7 @@ class YooKassaPayment(Base):
         return self.status == 'waiting_for_capture'
 
     def __repr__(self):
-        return f'<YooKassaPayment(id={self.id}, yookassa_id={self.yookassa_payment_id}, amount={self.amount_rubles}₽, status={self.status})>'
+        return f'<YooKassaPayment(id={self.id}, yookassa_id={self.yookassa_payment_id}, amount={self.amount_rubles}в‚Ѕ, status={self.status})>'
 
 
 class CryptoBotPayment(Base):
@@ -378,7 +378,7 @@ class MulenPayPayment(Base):
         return self.amount_kopeks / 100
 
     def __repr__(self) -> str:  # pragma: no cover - debug helper
-        return f'<MulenPayPayment(id={self.id}, mulen_id={self.mulen_payment_id}, amount={self.amount_rubles}₽, status={self.status})>'
+        return f'<MulenPayPayment(id={self.id}, mulen_id={self.mulen_payment_id}, amount={self.amount_rubles}в‚Ѕ, status={self.status})>'
 
 
 class Pal24Payment(Base):
@@ -434,7 +434,7 @@ class Pal24Payment(Base):
 
     def __repr__(self) -> str:  # pragma: no cover - debug helper
         return (
-            f'<Pal24Payment(id={self.id}, bill_id={self.bill_id}, amount={self.amount_rubles}₽, status={self.status})>'
+            f'<Pal24Payment(id={self.id}, bill_id={self.bill_id}, amount={self.amount_rubles}в‚Ѕ, status={self.status})>'
         )
 
 
@@ -478,7 +478,7 @@ class WataPayment(Base):
         return self.amount_kopeks / 100
 
     def __repr__(self) -> str:  # pragma: no cover - debug helper
-        return f'<WataPayment(id={self.id}, link_id={self.payment_link_id}, amount={self.amount_rubles}₽, status={self.status})>'
+        return f'<WataPayment(id={self.id}, link_id={self.payment_link_id}, amount={self.amount_rubles}в‚Ѕ, status={self.status})>'
 
 
 class PlategaPayment(Base):
@@ -520,7 +520,7 @@ class PlategaPayment(Base):
         return self.amount_kopeks / 100
 
     def __repr__(self) -> str:  # pragma: no cover - debug helper
-        return f'<PlategaPayment(id={self.id}, transaction_id={self.platega_transaction_id}, amount={self.amount_rubles}₽, status={self.status}, method={self.payment_method_code})>'
+        return f'<PlategaPayment(id={self.id}, transaction_id={self.platega_transaction_id}, amount={self.amount_rubles}в‚Ѕ, status={self.status}, method={self.payment_method_code})>'
 
 
 class CloudPaymentsPayment(Base):
@@ -529,9 +529,9 @@ class CloudPaymentsPayment(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
 
-    # CloudPayments идентификаторы
-    transaction_id_cp = Column(BigInteger, unique=True, nullable=True, index=True)  # TransactionId от CloudPayments
-    invoice_id = Column(String(255), unique=True, nullable=False, index=True)  # Наш InvoiceId
+    # CloudPayments РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂС‹
+    transaction_id_cp = Column(BigInteger, unique=True, nullable=True, index=True)  # TransactionId РѕС‚ CloudPayments
+    invoice_id = Column(String(255), unique=True, nullable=False, index=True)  # РќР°С€ InvoiceId
 
     amount_kopeks = Column(Integer, nullable=False)
     currency = Column(String(10), nullable=False, default='RUB')
@@ -541,29 +541,29 @@ class CloudPaymentsPayment(Base):
     is_paid = Column(Boolean, default=False)
     paid_at = Column(AwareDateTime(), nullable=True)
 
-    # Данные карты (маскированные)
+    # Р”Р°РЅРЅС‹Рµ РєР°СЂС‚С‹ (РјР°СЃРєРёСЂРѕРІР°РЅРЅС‹Рµ)
     card_first_six = Column(String(6), nullable=True)
     card_last_four = Column(String(4), nullable=True)
     card_type = Column(String(50), nullable=True)  # Visa, MasterCard, etc.
     card_exp_date = Column(String(10), nullable=True)  # MM/YY
 
-    # Токен для рекуррентных платежей
+    # РўРѕРєРµРЅ РґР»СЏ СЂРµРєСѓСЂСЂРµРЅС‚РЅС‹С… РїР»Р°С‚РµР¶РµР№
     token = Column(String(255), nullable=True)
 
-    # URL для оплаты (виджет)
+    # URL РґР»СЏ РѕРїР»Р°С‚С‹ (РІРёРґР¶РµС‚)
     payment_url = Column(Text, nullable=True)
 
-    # Email плательщика
+    # Email РїР»Р°С‚РµР»СЊС‰РёРєР°
     email = Column(String(255), nullable=True)
 
-    # Тестовый режим
+    # РўРµСЃС‚РѕРІС‹Р№ СЂРµР¶РёРј
     test_mode = Column(Boolean, default=False)
 
-    # Дополнительные данные
+    # Р”РѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹Рµ РґР°РЅРЅС‹Рµ
     metadata_json = Column(JSON, nullable=True)
     callback_payload = Column(JSON, nullable=True)
 
-    # Связь с транзакцией в нашей системе
+    # РЎРІСЏР·СЊ СЃ С‚СЂР°РЅР·Р°РєС†РёРµР№ РІ РЅР°С€РµР№ СЃРёСЃС‚РµРјРµ
     transaction_id = Column(Integer, ForeignKey('transactions.id'), nullable=True)
 
     created_at = Column(AwareDateTime(), default=func.now())
@@ -589,7 +589,7 @@ class CloudPaymentsPayment(Base):
         return self.status == 'failed'
 
     def __repr__(self) -> str:  # pragma: no cover - debug helper
-        return f'<CloudPaymentsPayment(id={self.id}, invoice={self.invoice_id}, amount={self.amount_rubles}₽, status={self.status})>'
+        return f'<CloudPaymentsPayment(id={self.id}, invoice={self.invoice_id}, amount={self.amount_rubles}в‚Ѕ, status={self.status})>'
 
 
 class FreekassaPayment(Base):
@@ -598,34 +598,34 @@ class FreekassaPayment(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
 
-    # Идентификаторы
-    order_id = Column(String(64), unique=True, nullable=False, index=True)  # Наш ID заказа
-    freekassa_order_id = Column(String(64), unique=True, nullable=True, index=True)  # intid от Freekassa
+    # РРґРµРЅС‚РёС„РёРєР°С‚РѕСЂС‹
+    order_id = Column(String(64), unique=True, nullable=False, index=True)  # РќР°С€ ID Р·Р°РєР°Р·Р°
+    freekassa_order_id = Column(String(64), unique=True, nullable=True, index=True)  # intid РѕС‚ Freekassa
 
-    # Суммы
+    # РЎСѓРјРјС‹
     amount_kopeks = Column(Integer, nullable=False)
     currency = Column(String(10), nullable=False, default='RUB')
     description = Column(Text, nullable=True)
 
-    # Статусы
+    # РЎС‚Р°С‚СѓСЃС‹
     status = Column(String(32), nullable=False, default='pending')  # pending, success, failed, expired
     is_paid = Column(Boolean, default=False)
 
-    # Данные платежа
+    # Р”Р°РЅРЅС‹Рµ РїР»Р°С‚РµР¶Р°
     payment_url = Column(Text, nullable=True)
-    payment_system_id = Column(Integer, nullable=True)  # ID платежной системы FK
+    payment_system_id = Column(Integer, nullable=True)  # ID РїР»Р°С‚РµР¶РЅРѕР№ СЃРёСЃС‚РµРјС‹ FK
 
-    # Метаданные
+    # РњРµС‚Р°РґР°РЅРЅС‹Рµ
     metadata_json = Column(JSON, nullable=True)
     callback_payload = Column(JSON, nullable=True)
 
-    # Временные метки
+    # Р’СЂРµРјРµРЅРЅС‹Рµ РјРµС‚РєРё
     paid_at = Column(AwareDateTime(), nullable=True)
     expires_at = Column(AwareDateTime(), nullable=True)
     created_at = Column(AwareDateTime(), default=func.now())
     updated_at = Column(AwareDateTime(), default=func.now(), onupdate=func.now())
 
-    # Связь с транзакцией
+    # РЎРІСЏР·СЊ СЃ С‚СЂР°РЅР·Р°РєС†РёРµР№
     transaction_id = Column(Integer, ForeignKey('transactions.id'), nullable=True)
 
     # Relationships
@@ -649,45 +649,45 @@ class FreekassaPayment(Base):
         return self.status in ['failed', 'expired']
 
     def __repr__(self) -> str:  # pragma: no cover - debug helper
-        return f'<FreekassaPayment(id={self.id}, order_id={self.order_id}, amount={self.amount_rubles}₽, status={self.status})>'
+        return f'<FreekassaPayment(id={self.id}, order_id={self.order_id}, amount={self.amount_rubles}в‚Ѕ, status={self.status})>'
 
 
 class KassaAiPayment(Base):
-    """Платежи через KassaAI (api.fk.life)."""
+    """РџР»Р°С‚РµР¶Рё С‡РµСЂРµР· KassaAI (api.fk.life)."""
 
     __tablename__ = 'kassa_ai_payments'
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
 
-    # Идентификаторы
-    order_id = Column(String(64), unique=True, nullable=False, index=True)  # Наш ID заказа
-    kassa_ai_order_id = Column(String(64), unique=True, nullable=True, index=True)  # orderId от KassaAI
+    # РРґРµРЅС‚РёС„РёРєР°С‚РѕСЂС‹
+    order_id = Column(String(64), unique=True, nullable=False, index=True)  # РќР°С€ ID Р·Р°РєР°Р·Р°
+    kassa_ai_order_id = Column(String(64), unique=True, nullable=True, index=True)  # orderId РѕС‚ KassaAI
 
-    # Суммы
+    # РЎСѓРјРјС‹
     amount_kopeks = Column(Integer, nullable=False)
     currency = Column(String(10), nullable=False, default='RUB')
     description = Column(Text, nullable=True)
 
-    # Статусы
+    # РЎС‚Р°С‚СѓСЃС‹
     status = Column(String(32), nullable=False, default='pending')  # pending, success, failed, expired
     is_paid = Column(Boolean, default=False)
 
-    # Данные платежа
+    # Р”Р°РЅРЅС‹Рµ РїР»Р°С‚РµР¶Р°
     payment_url = Column(Text, nullable=True)
-    payment_system_id = Column(Integer, nullable=True)  # ID платежной системы (44=СБП, 36=Карты, 43=SberPay)
+    payment_system_id = Column(Integer, nullable=True)  # ID РїР»Р°С‚РµР¶РЅРѕР№ СЃРёСЃС‚РµРјС‹ (44=РЎР‘Рџ, 36=РљР°СЂС‚С‹, 43=SberPay)
 
-    # Метаданные
+    # РњРµС‚Р°РґР°РЅРЅС‹Рµ
     metadata_json = Column(JSON, nullable=True)
     callback_payload = Column(JSON, nullable=True)
 
-    # Временные метки
+    # Р’СЂРµРјРµРЅРЅС‹Рµ РјРµС‚РєРё
     paid_at = Column(AwareDateTime(), nullable=True)
     expires_at = Column(AwareDateTime(), nullable=True)
     created_at = Column(AwareDateTime(), default=func.now())
     updated_at = Column(AwareDateTime(), default=func.now(), onupdate=func.now())
 
-    # Связь с транзакцией
+    # РЎРІСЏР·СЊ СЃ С‚СЂР°РЅР·Р°РєС†РёРµР№
     transaction_id = Column(Integer, ForeignKey('transactions.id'), nullable=True)
 
     # Relationships
@@ -711,7 +711,7 @@ class KassaAiPayment(Base):
         return self.status in ['failed', 'expired']
 
     def __repr__(self) -> str:  # pragma: no cover - debug helper
-        return f'<KassaAiPayment(id={self.id}, order_id={self.order_id}, amount={self.amount_rubles}₽, status={self.status})>'
+        return f'<KassaAiPayment(id={self.id}, order_id={self.order_id}, amount={self.amount_rubles}в‚Ѕ, status={self.status})>'
 
 
 class PromoGroup(Base):
@@ -800,7 +800,7 @@ class PromoGroup(Base):
 
 
 class UserPromoGroup(Base):
-    """Таблица связи Many-to-Many между пользователями и промогруппами."""
+    """РўР°Р±Р»РёС†Р° СЃРІСЏР·Рё Many-to-Many РјРµР¶РґСѓ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏРјРё Рё РїСЂРѕРјРѕРіСЂСѓРїРїР°РјРё."""
 
     __tablename__ = 'user_promo_groups'
 
@@ -817,109 +817,111 @@ class UserPromoGroup(Base):
 
 
 class Tariff(Base):
-    """Тарифный план для режима продаж 'Тарифы'."""
+    """РўР°СЂРёС„РЅС‹Р№ РїР»Р°РЅ РґР»СЏ СЂРµР¶РёРјР° РїСЂРѕРґР°Р¶ 'РўР°СЂРёС„С‹'."""
 
     __tablename__ = 'tariffs'
 
     id = Column(Integer, primary_key=True, index=True)
 
-    # Основная информация
+    # РћСЃРЅРѕРІРЅР°СЏ РёРЅС„РѕСЂРјР°С†РёСЏ
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     display_order = Column(Integer, default=0, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
 
-    # Параметры тарифа
-    traffic_limit_gb = Column(Integer, nullable=False, default=100)  # 0 = безлимит
+    # РџР°СЂР°РјРµС‚СЂС‹ С‚Р°СЂРёС„Р°
+    traffic_limit_gb = Column(Integer, nullable=False, default=100)  # 0 = Р±РµР·Р»РёРјРёС‚
     device_limit = Column(Integer, nullable=False, default=1)
     device_price_kopeks = Column(
         Integer, nullable=True, default=None
-    )  # Цена за доп. устройство (None = нельзя докупить)
-    max_device_limit = Column(Integer, nullable=True, default=None)  # Макс. устройств (None = без ограничений)
+    )  # Р¦РµРЅР° Р·Р° РґРѕРї. СѓСЃС‚СЂРѕР№СЃС‚РІРѕ (None = РЅРµР»СЊР·СЏ РґРѕРєСѓРїРёС‚СЊ)
+    max_device_limit = Column(Integer, nullable=True, default=None)  # РњР°РєСЃ. СѓСЃС‚СЂРѕР№СЃС‚РІ (None = Р±РµР· РѕРіСЂР°РЅРёС‡РµРЅРёР№)
 
-    # Сквады (серверы) доступные в тарифе
-    allowed_squads = Column(JSON, default=list)  # список UUID сквадов
+    # РЎРєРІР°РґС‹ (СЃРµСЂРІРµСЂС‹) РґРѕСЃС‚СѓРїРЅС‹Рµ РІ С‚Р°СЂРёС„Рµ
+    allowed_squads = Column(JSON, default=list)  # СЃРїРёСЃРѕРє UUID СЃРєРІР°РґРѕРІ
 
-    # Лимиты трафика по серверам (JSON: {"uuid": {"traffic_limit_gb": 100}, ...})
-    # Если сервер не указан - используется общий traffic_limit_gb
+    # Р›РёРјРёС‚С‹ С‚СЂР°С„РёРєР° РїРѕ СЃРµСЂРІРµСЂР°Рј (JSON: {"uuid": {"traffic_limit_gb": 100}, ...})
+    # Р•СЃР»Рё СЃРµСЂРІРµСЂ РЅРµ СѓРєР°Р·Р°РЅ - РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РѕР±С‰РёР№ traffic_limit_gb
     server_traffic_limits = Column(JSON, default=dict)
 
-    # Цены на периоды в копейках (JSON: {"14": 30000, "30": 50000, "90": 120000, ...})
+    # Р¦РµРЅС‹ РЅР° РїРµСЂРёРѕРґС‹ РІ РєРѕРїРµР№РєР°С… (JSON: {"14": 30000, "30": 50000, "90": 120000, ...})
     period_prices = Column(JSON, nullable=False, default=dict)
 
-    # Уровень тарифа (для визуального отображения, 1 = базовый)
+    # РЈСЂРѕРІРµРЅСЊ С‚Р°СЂРёС„Р° (РґР»СЏ РІРёР·СѓР°Р»СЊРЅРѕРіРѕ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ, 1 = Р±Р°Р·РѕРІС‹Р№)
     tier_level = Column(Integer, default=1, nullable=False)
 
-    # Дополнительные настройки
-    is_trial_available = Column(Boolean, default=False, nullable=False)  # Можно ли взять триал на этом тарифе
-    allow_traffic_topup = Column(Boolean, default=True, nullable=False)  # Разрешена ли докупка трафика для этого тарифа
+    # Р”РѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹Рµ РЅР°СЃС‚СЂРѕР№РєРё
+    is_trial_available = Column(Boolean, default=False, nullable=False)  # РњРѕР¶РЅРѕ Р»Рё РІР·СЏС‚СЊ С‚СЂРёР°Р» РЅР° СЌС‚РѕРј С‚Р°СЂРёС„Рµ
+    allow_traffic_topup = Column(Boolean, default=True, nullable=False)
+    family_enabled = Column(Boolean, default=False, nullable=False)
+    family_max_members = Column(Integer, default=0, nullable=False)
 
-    # Докупка трафика
-    traffic_topup_enabled = Column(Boolean, default=False, nullable=False)  # Разрешена ли докупка трафика
-    # Пакеты трафика: JSON {"5": 5000, "10": 9000, "20": 15000} (ГБ: цена в копейках)
+    # Р”РѕРєСѓРїРєР° С‚СЂР°С„РёРєР°
+    traffic_topup_enabled = Column(Boolean, default=False, nullable=False)  # Р Р°Р·СЂРµС€РµРЅР° Р»Рё РґРѕРєСѓРїРєР° С‚СЂР°С„РёРєР°
+    # РџР°РєРµС‚С‹ С‚СЂР°С„РёРєР°: JSON {"5": 5000, "10": 9000, "20": 15000} (Р“Р‘: С†РµРЅР° РІ РєРѕРїРµР№РєР°С…)
     traffic_topup_packages = Column(JSON, default=dict)
-    # Максимальный лимит трафика после докупки (0 = без ограничений)
+    # РњР°РєСЃРёРјР°Р»СЊРЅС‹Р№ Р»РёРјРёС‚ С‚СЂР°С„РёРєР° РїРѕСЃР»Рµ РґРѕРєСѓРїРєРё (0 = Р±РµР· РѕРіСЂР°РЅРёС‡РµРЅРёР№)
     max_topup_traffic_gb = Column(Integer, default=0, nullable=False)
 
-    # Суточный тариф - ежедневное списание
-    is_daily = Column(Boolean, default=False, nullable=False)  # Является ли тариф суточным
-    daily_price_kopeks = Column(Integer, default=0, nullable=False)  # Цена за день в копейках
+    # РЎСѓС‚РѕС‡РЅС‹Р№ С‚Р°СЂРёС„ - РµР¶РµРґРЅРµРІРЅРѕРµ СЃРїРёСЃР°РЅРёРµ
+    is_daily = Column(Boolean, default=False, nullable=False)  # РЇРІР»СЏРµС‚СЃСЏ Р»Рё С‚Р°СЂРёС„ СЃСѓС‚РѕС‡РЅС‹Рј
+    daily_price_kopeks = Column(Integer, default=0, nullable=False)  # Р¦РµРЅР° Р·Р° РґРµРЅСЊ РІ РєРѕРїРµР№РєР°С…
 
-    # Произвольное количество дней
-    custom_days_enabled = Column(Boolean, default=False, nullable=False)  # Разрешить произвольное кол-во дней
-    price_per_day_kopeks = Column(Integer, default=0, nullable=False)  # Цена за 1 день в копейках
-    min_days = Column(Integer, default=1, nullable=False)  # Минимальное количество дней
-    max_days = Column(Integer, default=365, nullable=False)  # Максимальное количество дней
+    # РџСЂРѕРёР·РІРѕР»СЊРЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ РґРЅРµР№
+    custom_days_enabled = Column(Boolean, default=False, nullable=False)  # Р Р°Р·СЂРµС€РёС‚СЊ РїСЂРѕРёР·РІРѕР»СЊРЅРѕРµ РєРѕР»-РІРѕ РґРЅРµР№
+    price_per_day_kopeks = Column(Integer, default=0, nullable=False)  # Р¦РµРЅР° Р·Р° 1 РґРµРЅСЊ РІ РєРѕРїРµР№РєР°С…
+    min_days = Column(Integer, default=1, nullable=False)  # РњРёРЅРёРјР°Р»СЊРЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ РґРЅРµР№
+    max_days = Column(Integer, default=365, nullable=False)  # РњР°РєСЃРёРјР°Р»СЊРЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ РґРЅРµР№
 
-    # Произвольный трафик при покупке
-    custom_traffic_enabled = Column(Boolean, default=False, nullable=False)  # Разрешить произвольный трафик
-    traffic_price_per_gb_kopeks = Column(Integer, default=0, nullable=False)  # Цена за 1 ГБ в копейках
-    min_traffic_gb = Column(Integer, default=1, nullable=False)  # Минимальный трафик в ГБ
-    max_traffic_gb = Column(Integer, default=1000, nullable=False)  # Максимальный трафик в ГБ
+    # РџСЂРѕРёР·РІРѕР»СЊРЅС‹Р№ С‚СЂР°С„РёРє РїСЂРё РїРѕРєСѓРїРєРµ
+    custom_traffic_enabled = Column(Boolean, default=False, nullable=False)  # Р Р°Р·СЂРµС€РёС‚СЊ РїСЂРѕРёР·РІРѕР»СЊРЅС‹Р№ С‚СЂР°С„РёРє
+    traffic_price_per_gb_kopeks = Column(Integer, default=0, nullable=False)  # Р¦РµРЅР° Р·Р° 1 Р“Р‘ РІ РєРѕРїРµР№РєР°С…
+    min_traffic_gb = Column(Integer, default=1, nullable=False)  # РњРёРЅРёРјР°Р»СЊРЅС‹Р№ С‚СЂР°С„РёРє РІ Р“Р‘
+    max_traffic_gb = Column(Integer, default=1000, nullable=False)  # РњР°РєСЃРёРјР°Р»СЊРЅС‹Р№ С‚СЂР°С„РёРє РІ Р“Р‘
 
-    # Режим сброса трафика: DAY, WEEK, MONTH, NO_RESET (по умолчанию берётся из конфига)
-    traffic_reset_mode = Column(String(20), nullable=True, default=None)  # None = использовать глобальную настройку
+    # Р РµР¶РёРј СЃР±СЂРѕСЃР° С‚СЂР°С„РёРєР°: DAY, WEEK, MONTH, NO_RESET (РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ Р±РµСЂС‘С‚СЃСЏ РёР· РєРѕРЅС„РёРіР°)
+    traffic_reset_mode = Column(String(20), nullable=True, default=None)  # None = РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ РіР»РѕР±Р°Р»СЊРЅСѓСЋ РЅР°СЃС‚СЂРѕР№РєСѓ
 
     created_at = Column(AwareDateTime(), default=func.now())
     updated_at = Column(AwareDateTime(), default=func.now(), onupdate=func.now())
 
-    # M2M связь с промогруппами (какие промогруппы имеют доступ к тарифу)
+    # M2M СЃРІСЏР·СЊ СЃ РїСЂРѕРјРѕРіСЂСѓРїРїР°РјРё (РєР°РєРёРµ РїСЂРѕРјРѕРіСЂСѓРїРїС‹ РёРјРµСЋС‚ РґРѕСЃС‚СѓРї Рє С‚Р°СЂРёС„Сѓ)
     allowed_promo_groups = relationship(
         'PromoGroup',
         secondary=tariff_promo_groups,
         lazy='selectin',
     )
 
-    # Подписки на этом тарифе
+    # РџРѕРґРїРёСЃРєРё РЅР° СЌС‚РѕРј С‚Р°СЂРёС„Рµ
     subscriptions = relationship('Subscription', back_populates='tariff')
 
     @property
     def is_unlimited_traffic(self) -> bool:
-        """Проверяет, безлимитный ли трафик."""
+        """РџСЂРѕРІРµСЂСЏРµС‚, Р±РµР·Р»РёРјРёС‚РЅС‹Р№ Р»Рё С‚СЂР°С„РёРє."""
         return self.traffic_limit_gb == 0
 
     def get_price_for_period(self, period_days: int) -> int | None:
-        """Возвращает цену в копейках для указанного периода."""
+        """Р’РѕР·РІСЂР°С‰Р°РµС‚ С†РµРЅСѓ РІ РєРѕРїРµР№РєР°С… РґР»СЏ СѓРєР°Р·Р°РЅРЅРѕРіРѕ РїРµСЂРёРѕРґР°."""
         prices = self.period_prices or {}
         return prices.get(str(period_days))
 
     def get_available_periods(self) -> list[int]:
-        """Возвращает список доступных периодов в днях."""
+        """Р’РѕР·РІСЂР°С‰Р°РµС‚ СЃРїРёСЃРѕРє РґРѕСЃС‚СѓРїРЅС‹С… РїРµСЂРёРѕРґРѕРІ РІ РґРЅСЏС…."""
         prices = self.period_prices or {}
         return sorted([int(p) for p in prices.keys()])
 
     def get_price_rubles(self, period_days: int) -> float | None:
-        """Возвращает цену в рублях для указанного периода."""
+        """Р’РѕР·РІСЂР°С‰Р°РµС‚ С†РµРЅСѓ РІ СЂСѓР±Р»СЏС… РґР»СЏ СѓРєР°Р·Р°РЅРЅРѕРіРѕ РїРµСЂРёРѕРґР°."""
         price_kopeks = self.get_price_for_period(period_days)
         if price_kopeks is not None:
             return price_kopeks / 100
         return None
 
     def get_traffic_limit_for_server(self, squad_uuid: str) -> int:
-        """Возвращает лимит трафика для конкретного сервера.
+        """Р’РѕР·РІСЂР°С‰Р°РµС‚ Р»РёРјРёС‚ С‚СЂР°С„РёРєР° РґР»СЏ РєРѕРЅРєСЂРµС‚РЅРѕРіРѕ СЃРµСЂРІРµСЂР°.
 
-        Если для сервера настроен отдельный лимит - возвращает его,
-        иначе возвращает общий traffic_limit_gb тарифа.
+        Р•СЃР»Рё РґР»СЏ СЃРµСЂРІРµСЂР° РЅР°СЃС‚СЂРѕРµРЅ РѕС‚РґРµР»СЊРЅС‹Р№ Р»РёРјРёС‚ - РІРѕР·РІСЂР°С‰Р°РµС‚ РµРіРѕ,
+        РёРЅР°С‡Рµ РІРѕР·РІСЂР°С‰Р°РµС‚ РѕР±С‰РёР№ traffic_limit_gb С‚Р°СЂРёС„Р°.
         """
         limits = self.server_traffic_limits or {}
         if squad_uuid in limits:
@@ -931,38 +933,38 @@ class Tariff(Base):
         return self.traffic_limit_gb
 
     def is_available_for_promo_group(self, promo_group_id: int | None) -> bool:
-        """Проверяет, доступен ли тариф для указанной промогруппы."""
+        """РџСЂРѕРІРµСЂСЏРµС‚, РґРѕСЃС‚СѓРїРµРЅ Р»Рё С‚Р°СЂРёС„ РґР»СЏ СѓРєР°Р·Р°РЅРЅРѕР№ РїСЂРѕРјРѕРіСЂСѓРїРїС‹."""
         if not self.allowed_promo_groups:
-            return True  # Если нет ограничений - доступен всем
+            return True  # Р•СЃР»Рё РЅРµС‚ РѕРіСЂР°РЅРёС‡РµРЅРёР№ - РґРѕСЃС‚СѓРїРµРЅ РІСЃРµРј
         if promo_group_id is None:
-            return True  # Если у пользователя нет группы - доступен
+            return True  # Р•СЃР»Рё Сѓ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РЅРµС‚ РіСЂСѓРїРїС‹ - РґРѕСЃС‚СѓРїРµРЅ
         return any(pg.id == promo_group_id for pg in self.allowed_promo_groups)
 
     def get_traffic_topup_packages(self) -> dict[int, int]:
-        """Возвращает пакеты трафика для докупки: {ГБ: цена в копейках}."""
+        """Р’РѕР·РІСЂР°С‰Р°РµС‚ РїР°РєРµС‚С‹ С‚СЂР°С„РёРєР° РґР»СЏ РґРѕРєСѓРїРєРё: {Р“Р‘: С†РµРЅР° РІ РєРѕРїРµР№РєР°С…}."""
         packages = self.traffic_topup_packages or {}
         return {int(gb): int(price) for gb, price in packages.items()}
 
     def get_traffic_topup_price(self, gb: int) -> int | None:
-        """Возвращает цену в копейках для указанного пакета трафика."""
+        """Р’РѕР·РІСЂР°С‰Р°РµС‚ С†РµРЅСѓ РІ РєРѕРїРµР№РєР°С… РґР»СЏ СѓРєР°Р·Р°РЅРЅРѕРіРѕ РїР°РєРµС‚Р° С‚СЂР°С„РёРєР°."""
         packages = self.get_traffic_topup_packages()
         return packages.get(gb)
 
     def get_available_traffic_packages(self) -> list[int]:
-        """Возвращает список доступных пакетов трафика в ГБ."""
+        """Р’РѕР·РІСЂР°С‰Р°РµС‚ СЃРїРёСЃРѕРє РґРѕСЃС‚СѓРїРЅС‹С… РїР°РєРµС‚РѕРІ С‚СЂР°С„РёРєР° РІ Р“Р‘."""
         packages = self.get_traffic_topup_packages()
         return sorted(packages.keys())
 
     def can_topup_traffic(self) -> bool:
-        """Проверяет, можно ли докупить трафик на этом тарифе."""
+        """РџСЂРѕРІРµСЂСЏРµС‚, РјРѕР¶РЅРѕ Р»Рё РґРѕРєСѓРїРёС‚СЊ С‚СЂР°С„РёРє РЅР° СЌС‚РѕРј С‚Р°СЂРёС„Рµ."""
         return self.traffic_topup_enabled and bool(self.traffic_topup_packages) and not self.is_unlimited_traffic
 
     def get_daily_price_rubles(self) -> float:
-        """Возвращает суточную цену в рублях."""
+        """Р’РѕР·РІСЂР°С‰Р°РµС‚ СЃСѓС‚РѕС‡РЅСѓСЋ С†РµРЅСѓ РІ СЂСѓР±Р»СЏС…."""
         return self.daily_price_kopeks / 100 if self.daily_price_kopeks else 0
 
     def get_price_for_custom_days(self, days: int) -> int | None:
-        """Возвращает цену для произвольного количества дней."""
+        """Р’РѕР·РІСЂР°С‰Р°РµС‚ С†РµРЅСѓ РґР»СЏ РїСЂРѕРёР·РІРѕР»СЊРЅРѕРіРѕ РєРѕР»РёС‡РµСЃС‚РІР° РґРЅРµР№."""
         if not self.custom_days_enabled or not self.price_per_day_kopeks:
             return None
         if days < self.min_days or days > self.max_days:
@@ -970,7 +972,7 @@ class Tariff(Base):
         return self.price_per_day_kopeks * days
 
     def get_price_for_custom_traffic(self, gb: int) -> int | None:
-        """Возвращает цену для произвольного количества трафика."""
+        """Р’РѕР·РІСЂР°С‰Р°РµС‚ С†РµРЅСѓ РґР»СЏ РїСЂРѕРёР·РІРѕР»СЊРЅРѕРіРѕ РєРѕР»РёС‡РµСЃС‚РІР° С‚СЂР°С„РёРєР°."""
         if not self.custom_traffic_enabled or not self.traffic_price_per_gb_kopeks:
             return None
         if gb < self.min_traffic_gb or gb > self.max_traffic_gb:
@@ -978,11 +980,11 @@ class Tariff(Base):
         return self.traffic_price_per_gb_kopeks * gb
 
     def can_purchase_custom_days(self) -> bool:
-        """Проверяет, можно ли купить произвольное количество дней."""
+        """РџСЂРѕРІРµСЂСЏРµС‚, РјРѕР¶РЅРѕ Р»Рё РєСѓРїРёС‚СЊ РїСЂРѕРёР·РІРѕР»СЊРЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ РґРЅРµР№."""
         return self.custom_days_enabled and self.price_per_day_kopeks > 0
 
     def can_purchase_custom_traffic(self) -> bool:
-        """Проверяет, можно ли купить произвольный трафик."""
+        """РџСЂРѕРІРµСЂСЏРµС‚, РјРѕР¶РЅРѕ Р»Рё РєСѓРїРёС‚СЊ РїСЂРѕРёР·РІРѕР»СЊРЅС‹Р№ С‚СЂР°С„РёРє."""
         return self.custom_traffic_enabled and self.traffic_price_per_gb_kopeks > 0
 
     def __repr__(self):
@@ -990,21 +992,21 @@ class Tariff(Base):
 
 
 class PartnerStatus(Enum):
-    """Статусы партнёрского аккаунта."""
+    """РЎС‚Р°С‚СѓСЃС‹ РїР°СЂС‚РЅС‘СЂСЃРєРѕРіРѕ Р°РєРєР°СѓРЅС‚Р°."""
 
-    NONE = 'none'  # Не подавал заявку
-    PENDING = 'pending'  # Заявка на рассмотрении
-    APPROVED = 'approved'  # Партнёр одобрен
-    REJECTED = 'rejected'  # Заявка отклонена
+    NONE = 'none'  # РќРµ РїРѕРґР°РІР°Р» Р·Р°СЏРІРєСѓ
+    PENDING = 'pending'  # Р—Р°СЏРІРєР° РЅР° СЂР°СЃСЃРјРѕС‚СЂРµРЅРёРё
+    APPROVED = 'approved'  # РџР°СЂС‚РЅС‘СЂ РѕРґРѕР±СЂРµРЅ
+    REJECTED = 'rejected'  # Р—Р°СЏРІРєР° РѕС‚РєР»РѕРЅРµРЅР°
 
 
 class User(Base):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True, index=True)
-    telegram_id = Column(BigInteger, unique=True, index=True, nullable=True)  # Nullable для email-only пользователей
-    auth_type = Column(String(20), default='telegram', nullable=False)  # "telegram" или "email"
-    username = Column(String(255), nullable=True)
+    telegram_id = Column(BigInteger, unique=True, index=True, nullable=True)  # Nullable РґР»СЏ email-only РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№
+    auth_type = Column(String(20), default='telegram', nullable=False)  # "telegram" РёР»Рё "email"
+    username = Column(String(255), nullable=True, index=True)
     first_name = Column(String(255), nullable=True)
     last_name = Column(String(255), nullable=True)
     status = Column(String(20), default=UserStatus.ACTIVE.value)
@@ -1064,23 +1066,27 @@ class User(Base):
     admin_roles_rel = relationship('UserRole', foreign_keys='[UserRole.user_id]', back_populates='user')
     notification_settings = Column(JSON, nullable=True, default=dict)
     last_pinned_message_id = Column(Integer, nullable=True)
+    owned_family_group = relationship('FamilyGroup', back_populates='owner', uselist=False)
+    family_memberships = relationship('FamilyMember', foreign_keys='[FamilyMember.user_id]', back_populates='user')
+    sent_family_invites = relationship('FamilyInvite', foreign_keys='[FamilyInvite.inviter_user_id]', back_populates='inviter')
+    received_family_invites = relationship('FamilyInvite', foreign_keys='[FamilyInvite.invitee_user_id]', back_populates='invitee')
 
-    # Ограничения пользователя
-    restriction_topup = Column(Boolean, default=False, nullable=False)  # Запрет пополнения
-    restriction_subscription = Column(Boolean, default=False, nullable=False)  # Запрет продления/покупки
-    restriction_reason = Column(String(500), nullable=True)  # Причина ограничения
+    # РћРіСЂР°РЅРёС‡РµРЅРёСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
+    restriction_topup = Column(Boolean, default=False, nullable=False)  # Р—Р°РїСЂРµС‚ РїРѕРїРѕР»РЅРµРЅРёСЏ
+    restriction_subscription = Column(Boolean, default=False, nullable=False)  # Р—Р°РїСЂРµС‚ РїСЂРѕРґР»РµРЅРёСЏ/РїРѕРєСѓРїРєРё
+    restriction_reason = Column(String(500), nullable=True)  # РџСЂРёС‡РёРЅР° РѕРіСЂР°РЅРёС‡РµРЅРёСЏ
 
-    # Партнёрская система
+    # РџР°СЂС‚РЅС‘СЂСЃРєР°СЏ СЃРёСЃС‚РµРјР°
     partner_status = Column(String(20), default=PartnerStatus.NONE.value, nullable=False, index=True)
 
     @property
     def is_partner(self) -> bool:
-        """Проверить, является ли пользователь одобренным партнёром."""
+        """РџСЂРѕРІРµСЂРёС‚СЊ, СЏРІР»СЏРµС‚СЃСЏ Р»Рё РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ РѕРґРѕР±СЂРµРЅРЅС‹Рј РїР°СЂС‚РЅС‘СЂРѕРј."""
         return self.partner_status == PartnerStatus.APPROVED.value
 
     @property
     def has_restrictions(self) -> bool:
-        """Проверить, есть ли у пользователя активные ограничения."""
+        """РџСЂРѕРІРµСЂРёС‚СЊ, РµСЃС‚СЊ Р»Рё Сѓ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ Р°РєС‚РёРІРЅС‹Рµ РѕРіСЂР°РЅРёС‡РµРЅРёСЏ."""
         return self.restriction_topup or self.restriction_subscription
 
     @property
@@ -1089,7 +1095,7 @@ class User(Base):
 
     @property
     def full_name(self) -> str:
-        """Полное имя пользователя с поддержкой email-only юзеров."""
+        """РџРѕР»РЅРѕРµ РёРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ СЃ РїРѕРґРґРµСЂР¶РєРѕР№ email-only СЋР·РµСЂРѕРІ."""
         parts = [self.first_name, self.last_name]
         name = ' '.join(filter(None, parts))
         if name:
@@ -1104,22 +1110,22 @@ class User(Base):
 
     @property
     def is_email_user(self) -> bool:
-        """Пользователь зарегистрирован через email (без Telegram)."""
+        """РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ Р·Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°РЅ С‡РµСЂРµР· email (Р±РµР· Telegram)."""
         return self.auth_type == 'email' and self.telegram_id is None
 
     @property
     def is_web_user(self) -> bool:
-        """Пользователь без Telegram (email, OAuth и т.д.)."""
+        """РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ Р±РµР· Telegram (email, OAuth Рё С‚.Рґ.)."""
         return self.telegram_id is None
 
     def get_primary_promo_group(self):
-        """Возвращает промогруппу с максимальным приоритетом."""
+        """Р’РѕР·РІСЂР°С‰Р°РµС‚ РїСЂРѕРјРѕРіСЂСѓРїРїСѓ СЃ РјР°РєСЃРёРјР°Р»СЊРЅС‹Рј РїСЂРёРѕСЂРёС‚РµС‚РѕРј."""
         if not self.user_promo_groups:
             return getattr(self, 'promo_group', None)
 
         try:
-            # Сортируем по приоритету группы (убывание), затем по ID группы
-            # Используем getattr для защиты от ленивой загрузки
+            # РЎРѕСЂС‚РёСЂСѓРµРј РїРѕ РїСЂРёРѕСЂРёС‚РµС‚Сѓ РіСЂСѓРїРїС‹ (СѓР±С‹РІР°РЅРёРµ), Р·Р°С‚РµРј РїРѕ ID РіСЂСѓРїРїС‹
+            # РСЃРїРѕР»СЊР·СѓРµРј getattr РґР»СЏ Р·Р°С‰РёС‚С‹ РѕС‚ Р»РµРЅРёРІРѕР№ Р·Р°РіСЂСѓР·РєРё
             sorted_groups = sorted(
                 self.user_promo_groups,
                 key=lambda upg: (getattr(upg.promo_group, 'priority', 0) if upg.promo_group else 0, upg.promo_group_id),
@@ -1129,10 +1135,10 @@ class User(Base):
             if sorted_groups and sorted_groups[0].promo_group:
                 return sorted_groups[0].promo_group
         except Exception:
-            # Если возникла ошибка (например, ленивая загрузка), fallback на старую связь
+            # Р•СЃР»Рё РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР° (РЅР°РїСЂРёРјРµСЂ, Р»РµРЅРёРІР°СЏ Р·Р°РіСЂСѓР·РєР°), fallback РЅР° СЃС‚Р°СЂСѓСЋ СЃРІСЏР·СЊ
             pass
 
-        # Fallback на старую связь если новая пустая или возникла ошибка
+        # Fallback РЅР° СЃС‚Р°СЂСѓСЋ СЃРІСЏР·СЊ РµСЃР»Рё РЅРѕРІР°СЏ РїСѓСЃС‚Р°СЏ РёР»Рё РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°
         return getattr(self, 'promo_group', None)
 
     def get_promo_discount(self, category: str, period_days: int | None = None) -> int:
@@ -1165,10 +1171,10 @@ class Subscription(Base):
 
     traffic_limit_gb = Column(Integer, default=0)
     traffic_used_gb = Column(Float, default=0.0)
-    purchased_traffic_gb = Column(Integer, default=0)  # Докупленный трафик
+    purchased_traffic_gb = Column(Integer, default=0)  # Р”РѕРєСѓРїР»РµРЅРЅС‹Р№ С‚СЂР°С„РёРє
     traffic_reset_at = Column(
         AwareDateTime(), nullable=True
-    )  # Дата сброса докупленного трафика (30 дней после первой докупки)
+    )  # Р”Р°С‚Р° СЃР±СЂРѕСЃР° РґРѕРєСѓРїР»РµРЅРЅРѕРіРѕ С‚СЂР°С„РёРєР° (30 РґРЅРµР№ РїРѕСЃР»Рµ РїРµСЂРІРѕР№ РґРѕРєСѓРїРєРё)
 
     subscription_url = Column(String, nullable=True)
     subscription_crypto_link = Column(String, nullable=True)
@@ -1188,17 +1194,18 @@ class Subscription(Base):
 
     remnawave_short_uuid = Column(String(255), nullable=True)
 
-    # Тариф (для режима продаж "Тарифы")
+    # РўР°СЂРёС„ (РґР»СЏ СЂРµР¶РёРјР° РїСЂРѕРґР°Р¶ "РўР°СЂРёС„С‹")
     tariff_id = Column(Integer, ForeignKey('tariffs.id', ondelete='SET NULL'), nullable=True, index=True)
 
-    # Суточная подписка
+    # РЎСѓС‚РѕС‡РЅР°СЏ РїРѕРґРїРёСЃРєР°
     is_daily_paused = Column(
         Boolean, default=False, nullable=False
-    )  # Приостановлена ли суточная подписка пользователем
-    last_daily_charge_at = Column(AwareDateTime(), nullable=True)  # Время последнего суточного списания
+    )  # РџСЂРёРѕСЃС‚Р°РЅРѕРІР»РµРЅР° Р»Рё СЃСѓС‚РѕС‡РЅР°СЏ РїРѕРґРїРёСЃРєР° РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј
+    last_daily_charge_at = Column(AwareDateTime(), nullable=True)  # Р’СЂРµРјСЏ РїРѕСЃР»РµРґРЅРµРіРѕ СЃСѓС‚РѕС‡РЅРѕРіРѕ СЃРїРёСЃР°РЅРёСЏ
 
     user = relationship('User', back_populates='subscription')
     tariff = relationship('Tariff', back_populates='subscriptions')
+    family_group = relationship('FamilyGroup', back_populates='subscription', uselist=False)
     discount_offers = relationship('DiscountOffer', back_populates='subscription')
     temporary_accesses = relationship(
         'SubscriptionTemporaryAccess', back_populates='subscription', passive_deletes=True
@@ -1215,7 +1222,7 @@ class Subscription(Base):
 
     @property
     def is_expired(self) -> bool:
-        """Проверяет, истёк ли срок подписки"""
+        """РџСЂРѕРІРµСЂСЏРµС‚, РёСЃС‚С‘Рє Р»Рё СЃСЂРѕРє РїРѕРґРїРёСЃРєРё"""
         end = _aware(self.end_date)
         return end is not None and end <= datetime.now(UTC)
 
@@ -1253,34 +1260,34 @@ class Subscription(Base):
         actual_status = self.actual_status
 
         if actual_status == 'expired':
-            return '🔴 Истекла'
+            return 'рџ”ґ РСЃС‚РµРєР»Р°'
         if actual_status == 'active':
             if self.is_trial:
-                return '🎯 Тестовая'
-            return '🟢 Активна'
+                return 'рџЋЇ РўРµСЃС‚РѕРІР°СЏ'
+            return 'рџџў РђРєС‚РёРІРЅР°'
         if actual_status == 'disabled':
-            return '⚫ Отключена'
+            return 'вљ« РћС‚РєР»СЋС‡РµРЅР°'
         if actual_status == 'trial':
-            return '🎯 Тестовая'
+            return 'рџЋЇ РўРµСЃС‚РѕРІР°СЏ'
 
-        return '❓ Неизвестно'
+        return 'вќ“ РќРµРёР·РІРµСЃС‚РЅРѕ'
 
     @property
     def status_emoji(self) -> str:
         actual_status = self.actual_status
 
         if actual_status == 'expired':
-            return '🔴'
+            return 'рџ”ґ'
         if actual_status == 'active':
             if self.is_trial:
-                return '🎁'
-            return '💎'
+                return 'рџЋЃ'
+            return 'рџ’Ћ'
         if actual_status == 'disabled':
-            return '⚫'
+            return 'вљ«'
         if actual_status == 'trial':
-            return '🎁'
+            return 'рџЋЃ'
 
-        return '❓'
+        return 'вќ“'
 
     @property
     def days_left(self) -> int:
@@ -1298,7 +1305,7 @@ class Subscription(Base):
         end = _aware(self.end_date)
         current_time = datetime.now(UTC)
         if end is None or end <= current_time:
-            return 'истёк'
+            return 'РёСЃС‚С‘Рє'
 
         delta = end - current_time
         days = delta.days
@@ -1306,10 +1313,10 @@ class Subscription(Base):
         minutes = (delta.seconds % 3600) // 60
 
         if days > 0:
-            return f'{days} дн.'
+            return f'{days} РґРЅ.'
         if hours > 0:
-            return f'{hours} ч.'
-        return f'{minutes} мин.'
+            return f'{hours} С‡.'
+        return f'{minutes} РјРёРЅ.'
 
     @property
     def traffic_used_percent(self) -> float:
@@ -1335,21 +1342,21 @@ class Subscription(Base):
 
     @property
     def is_daily_tariff(self) -> bool:
-        """Проверяет, является ли тариф подписки суточным."""
+        """РџСЂРѕРІРµСЂСЏРµС‚, СЏРІР»СЏРµС‚СЃСЏ Р»Рё С‚Р°СЂРёС„ РїРѕРґРїРёСЃРєРё СЃСѓС‚РѕС‡РЅС‹Рј."""
         if self.tariff:
             return getattr(self.tariff, 'is_daily', False)
         return False
 
     @property
     def daily_price_kopeks(self) -> int:
-        """Возвращает суточную цену тарифа в копейках."""
+        """Р’РѕР·РІСЂР°С‰Р°РµС‚ СЃСѓС‚РѕС‡РЅСѓСЋ С†РµРЅСѓ С‚Р°СЂРёС„Р° РІ РєРѕРїРµР№РєР°С…."""
         if self.tariff:
             return getattr(self.tariff, 'daily_price_kopeks', 0)
         return 0
 
     @property
     def can_charge_daily(self) -> bool:
-        """Проверяет, можно ли списать суточную оплату."""
+        """РџСЂРѕРІРµСЂСЏРµС‚, РјРѕР¶РЅРѕ Р»Рё СЃРїРёСЃР°С‚СЊ СЃСѓС‚РѕС‡РЅСѓСЋ РѕРїР»Р°С‚Сѓ."""
         if not self.is_daily_tariff:
             return False
         if self.is_daily_paused:
@@ -1358,17 +1365,83 @@ class Subscription(Base):
             return False
         return True
 
+class FamilyGroup(Base):
+    __tablename__ = 'family_groups'
+    id = Column(Integer, primary_key=True, index=True)
+    owner_user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, unique=True)
+    subscription_id = Column(Integer, ForeignKey('subscriptions.id', ondelete='CASCADE'), nullable=False, unique=True)
+    created_at = Column(AwareDateTime(), default=func.now(), nullable=False)
+    owner = relationship('User', foreign_keys=[owner_user_id], back_populates='owned_family_group')
+    subscription = relationship('Subscription', foreign_keys=[subscription_id], back_populates='family_group')
+    members = relationship('FamilyMember', back_populates='family_group', cascade='all, delete-orphan')
+    invites = relationship('FamilyInvite', back_populates='family_group', cascade='all, delete-orphan')
+    devices = relationship('FamilyDevice', back_populates='family_group', cascade='all, delete-orphan')
+class FamilyMember(Base):
+    __tablename__ = 'family_members'
+    __table_args__ = (
+        UniqueConstraint('family_group_id', 'user_id', name='uq_family_members_group_user'),
+        Index('ix_family_members_user_status', 'user_id', 'status'),
+    )
+    id = Column(Integer, primary_key=True, index=True)
+    family_group_id = Column(Integer, ForeignKey('family_groups.id', ondelete='CASCADE'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    role = Column(String(20), nullable=False, default='member')
+    status = Column(String(20), nullable=False, default='invited')
+    invited_by_user_id = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    invited_at = Column(AwareDateTime(), default=func.now(), nullable=False)
+    accepted_at = Column(AwareDateTime(), nullable=True)
+    removed_at = Column(AwareDateTime(), nullable=True)
+    family_group = relationship('FamilyGroup', back_populates='members')
+    user = relationship('User', foreign_keys=[user_id], back_populates='family_memberships')
+    invited_by = relationship('User', foreign_keys=[invited_by_user_id])
+class FamilyInvite(Base):
+    __tablename__ = 'family_invites'
+    __table_args__ = (
+        UniqueConstraint('family_group_id', 'invitee_user_id', 'status', name='uq_family_invites_pending_tuple'),
+        Index('ix_family_invites_invitee_status', 'invitee_user_id', 'status'),
+    )
+    id = Column(Integer, primary_key=True, index=True)
+    family_group_id = Column(Integer, ForeignKey('family_groups.id', ondelete='CASCADE'), nullable=False)
+    invitee_user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    inviter_user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    token = Column(String(128), nullable=True, unique=True)
+    status = Column(String(20), nullable=False, default='pending')
+    created_at = Column(AwareDateTime(), default=func.now(), nullable=False)
+    decided_at = Column(AwareDateTime(), nullable=True)
+    expires_at = Column(AwareDateTime(), nullable=True)
+    family_group = relationship('FamilyGroup', back_populates='invites')
+    invitee = relationship('User', foreign_keys=[invitee_user_id], back_populates='received_family_invites')
+    inviter = relationship('User', foreign_keys=[inviter_user_id], back_populates='sent_family_invites')
+class FamilyDevice(Base):
+    __tablename__ = 'family_devices'
+    __table_args__ = (
+        UniqueConstraint('family_group_id', 'hwid', name='uq_family_devices_group_hwid'),
+        Index('ix_family_devices_owner', 'owner_user_id'),
+    )
+    id = Column(Integer, primary_key=True, index=True)
+    family_group_id = Column(Integer, ForeignKey('family_groups.id', ondelete='CASCADE'), nullable=False)
+    hwid = Column(String(255), nullable=False)
+    owner_user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    subscription_user_id = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    platform = Column(String(100), nullable=True)
+    device_model = Column(String(255), nullable=True)
+    created_at = Column(AwareDateTime(), default=func.now(), nullable=False)
+    last_seen_at = Column(AwareDateTime(), default=func.now(), nullable=False)
+    family_group = relationship('FamilyGroup', back_populates='devices')
+    owner_user = relationship('User', foreign_keys=[owner_user_id])
+    subscription_user = relationship('User', foreign_keys=[subscription_user_id])
+
 
 class TrafficPurchase(Base):
-    """Докупка трафика с индивидуальной датой истечения."""
+    """Р”РѕРєСѓРїРєР° С‚СЂР°С„РёРєР° СЃ РёРЅРґРёРІРёРґСѓР°Р»СЊРЅРѕР№ РґР°С‚РѕР№ РёСЃС‚РµС‡РµРЅРёСЏ."""
 
     __tablename__ = 'traffic_purchases'
 
     id = Column(Integer, primary_key=True, index=True)
     subscription_id = Column(Integer, ForeignKey('subscriptions.id', ondelete='CASCADE'), nullable=False, index=True)
 
-    traffic_gb = Column(Integer, nullable=False)  # Количество ГБ в покупке
-    expires_at = Column(AwareDateTime(), nullable=False, index=True)  # Дата истечения (покупка + 30 дней)
+    traffic_gb = Column(Integer, nullable=False)  # РљРѕР»РёС‡РµСЃС‚РІРѕ Р“Р‘ РІ РїРѕРєСѓРїРєРµ
+    expires_at = Column(AwareDateTime(), nullable=False, index=True)  # Р”Р°С‚Р° РёСЃС‚РµС‡РµРЅРёСЏ (РїРѕРєСѓРїРєР° + 30 РґРЅРµР№)
 
     created_at = Column(AwareDateTime(), default=func.now())
 
@@ -1376,7 +1449,7 @@ class TrafficPurchase(Base):
 
     @property
     def is_expired(self) -> bool:
-        """Проверяет, истекла ли докупка."""
+        """РџСЂРѕРІРµСЂСЏРµС‚, РёСЃС‚РµРєР»Р° Р»Рё РґРѕРєСѓРїРєР°."""
         return datetime.now(UTC) >= _aware(self.expires_at)
 
 
@@ -1395,7 +1468,7 @@ class Transaction(Base):
 
     is_completed = Column(Boolean, default=True)
 
-    # NaloGO чек
+    # NaloGO С‡РµРє
     receipt_uuid = Column(String(255), nullable=True, index=True)
     receipt_created_at = Column(AwareDateTime(), nullable=True)
 
@@ -1455,7 +1528,7 @@ class PromoCode(Base):
     valid_until = Column(AwareDateTime(), nullable=True)
 
     is_active = Column(Boolean, default=True)
-    first_purchase_only = Column(Boolean, default=False)  # Только для первой покупки
+    first_purchase_only = Column(Boolean, default=False)  # РўРѕР»СЊРєРѕ РґР»СЏ РїРµСЂРІРѕР№ РїРѕРєСѓРїРєРё
 
     created_by = Column(Integer, ForeignKey('users.id'), nullable=True)
     promo_group_id = Column(Integer, ForeignKey('promo_groups.id', ondelete='SET NULL'), nullable=True, index=True)
@@ -1522,34 +1595,34 @@ class ReferralEarning(Base):
 
 
 class WithdrawalRequestStatus(Enum):
-    """Статусы заявки на вывод реферального баланса."""
+    """РЎС‚Р°С‚СѓСЃС‹ Р·Р°СЏРІРєРё РЅР° РІС‹РІРѕРґ СЂРµС„РµСЂР°Р»СЊРЅРѕРіРѕ Р±Р°Р»Р°РЅСЃР°."""
 
-    PENDING = 'pending'  # Ожидает рассмотрения
-    APPROVED = 'approved'  # Одобрена
-    REJECTED = 'rejected'  # Отклонена
-    COMPLETED = 'completed'  # Выполнена (деньги переведены)
-    CANCELLED = 'cancelled'  # Отменена пользователем
+    PENDING = 'pending'  # РћР¶РёРґР°РµС‚ СЂР°СЃСЃРјРѕС‚СЂРµРЅРёСЏ
+    APPROVED = 'approved'  # РћРґРѕР±СЂРµРЅР°
+    REJECTED = 'rejected'  # РћС‚РєР»РѕРЅРµРЅР°
+    COMPLETED = 'completed'  # Р’С‹РїРѕР»РЅРµРЅР° (РґРµРЅСЊРіРё РїРµСЂРµРІРµРґРµРЅС‹)
+    CANCELLED = 'cancelled'  # РћС‚РјРµРЅРµРЅР° РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј
 
 
 class WithdrawalRequest(Base):
-    """Заявка на вывод реферального баланса."""
+    """Р—Р°СЏРІРєР° РЅР° РІС‹РІРѕРґ СЂРµС„РµСЂР°Р»СЊРЅРѕРіРѕ Р±Р°Р»Р°РЅСЃР°."""
 
     __tablename__ = 'withdrawal_requests'
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
 
-    amount_kopeks = Column(Integer, nullable=False)  # Сумма к выводу
+    amount_kopeks = Column(Integer, nullable=False)  # РЎСѓРјРјР° Рє РІС‹РІРѕРґСѓ
     status = Column(String(50), default=WithdrawalRequestStatus.PENDING.value, nullable=False, index=True)
 
-    # Данные для вывода (заполняет пользователь)
-    payment_details = Column(Text, nullable=True)  # Реквизиты для перевода
+    # Р”Р°РЅРЅС‹Рµ РґР»СЏ РІС‹РІРѕРґР° (Р·Р°РїРѕР»РЅСЏРµС‚ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ)
+    payment_details = Column(Text, nullable=True)  # Р РµРєРІРёР·РёС‚С‹ РґР»СЏ РїРµСЂРµРІРѕРґР°
 
-    # Анализ на отмывание
-    risk_score = Column(Integer, default=0)  # 0-100, чем выше — тем подозрительнее
-    risk_analysis = Column(Text, nullable=True)  # JSON с деталями анализа
+    # РђРЅР°Р»РёР· РЅР° РѕС‚РјС‹РІР°РЅРёРµ
+    risk_score = Column(Integer, default=0)  # 0-100, С‡РµРј РІС‹С€Рµ вЂ” С‚РµРј РїРѕРґРѕР·СЂРёС‚РµР»СЊРЅРµРµ
+    risk_analysis = Column(Text, nullable=True)  # JSON СЃ РґРµС‚Р°Р»СЏРјРё Р°РЅР°Р»РёР·Р°
 
-    # Обработка админом
+    # РћР±СЂР°Р±РѕС‚РєР° Р°РґРјРёРЅРѕРј
     processed_by = Column(Integer, ForeignKey('users.id'), nullable=True)
     processed_at = Column(AwareDateTime(), nullable=True)
     admin_comment = Column(Text, nullable=True)
@@ -1566,7 +1639,7 @@ class WithdrawalRequest(Base):
 
 
 class PartnerApplication(Base):
-    """Заявка на получение статуса партнёра."""
+    """Р—Р°СЏРІРєР° РЅР° РїРѕР»СѓС‡РµРЅРёРµ СЃС‚Р°С‚СѓСЃР° РїР°СЂС‚РЅС‘СЂР°."""
 
     __tablename__ = 'partner_applications'
 
@@ -1581,7 +1654,7 @@ class PartnerApplication(Base):
 
     status = Column(String(20), default=PartnerStatus.PENDING.value, nullable=False)
 
-    # Обработка админом
+    # РћР±СЂР°Р±РѕС‚РєР° Р°РґРјРёРЅРѕРј
     admin_comment = Column(Text, nullable=True)
     approved_commission_percent = Column(Integer, nullable=True)
     processed_by = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
@@ -1849,7 +1922,18 @@ class MonitoringLog(Base):
 
     created_at = Column(AwareDateTime(), default=func.now())
 
-
+class UserNotification(Base):
+    __tablename__ = 'user_notifications'
+    __table_args__ = (Index('ix_user_notifications_user_read', 'user_id', 'read_at'),)
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    notification_type = Column(String(50), nullable=False)
+    title = Column(String(255), nullable=False)
+    body = Column(Text, nullable=True)
+    payload = Column(JSON, nullable=True, default=dict)
+    read_at = Column(AwareDateTime(), nullable=True)
+    created_at = Column(AwareDateTime(), default=func.now(), nullable=False)
+    user = relationship('User', backref='user_notifications')
 class SentNotification(Base):
     __tablename__ = 'sent_notifications'
 
@@ -2135,10 +2219,10 @@ class ServerSquad(Base):
     @property
     def availability_status(self) -> str:
         if not self.is_available:
-            return 'Недоступен'
+            return 'РќРµРґРѕСЃС‚СѓРїРµРЅ'
         if self.is_full:
-            return 'Переполнен'
-        return 'Доступен'
+            return 'РџРµСЂРµРїРѕР»РЅРµРЅ'
+        return 'Р”РѕСЃС‚СѓРїРµРЅ'
 
 
 class SubscriptionServer(Base):
@@ -2234,13 +2318,13 @@ class AdvertisingCampaign(Base):
     subscription_device_limit = Column(Integer, nullable=True)
     subscription_squads = Column(JSON, default=list)
 
-    # Поля для типа "tariff" - выдача тарифа
+    # РџРѕР»СЏ РґР»СЏ С‚РёРїР° "tariff" - РІС‹РґР°С‡Р° С‚Р°СЂРёС„Р°
     tariff_id = Column(Integer, ForeignKey('tariffs.id', ondelete='SET NULL'), nullable=True)
     tariff_duration_days = Column(Integer, nullable=True)
 
     is_active = Column(Boolean, default=True)
 
-    # Привязка к партнёру
+    # РџСЂРёРІСЏР·РєР° Рє РїР°СЂС‚РЅС‘СЂСѓ
     partner_user_id = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True)
 
     created_by = Column(Integer, ForeignKey('users.id'), nullable=True)
@@ -2261,12 +2345,12 @@ class AdvertisingCampaign(Base):
 
     @property
     def is_none_bonus(self) -> bool:
-        """Ссылка без награды - только для отслеживания."""
+        """РЎСЃС‹Р»РєР° Р±РµР· РЅР°РіСЂР°РґС‹ - С‚РѕР»СЊРєРѕ РґР»СЏ РѕС‚СЃР»РµР¶РёРІР°РЅРёСЏ."""
         return self.bonus_type == 'none'
 
     @property
     def is_tariff_bonus(self) -> bool:
-        """Выдача тарифа на определённое время."""
+        """Р’С‹РґР°С‡Р° С‚Р°СЂРёС„Р° РЅР° РѕРїСЂРµРґРµР»С‘РЅРЅРѕРµ РІСЂРµРјСЏ."""
         return self.bonus_type == 'tariff'
 
 
@@ -2282,7 +2366,7 @@ class AdvertisingCampaignRegistration(Base):
     balance_bonus_kopeks = Column(Integer, default=0)
     subscription_duration_days = Column(Integer, nullable=True)
 
-    # Поля для типа "tariff"
+    # РџРѕР»СЏ РґР»СЏ С‚РёРїР° "tariff"
     tariff_id = Column(Integer, ForeignKey('tariffs.id', ondelete='SET NULL'), nullable=True)
     tariff_duration_days = Column(Integer, nullable=True)
 
@@ -2313,7 +2397,7 @@ class Ticket(Base):
     title = Column(String(255), nullable=False)
     status = Column(String(20), default=TicketStatus.OPEN.value, nullable=False)
     priority = Column(String(20), default='normal', nullable=False)  # low, normal, high, urgent
-    # Блокировка ответов пользователя в этом тикете
+    # Р‘Р»РѕРєРёСЂРѕРІРєР° РѕС‚РІРµС‚РѕРІ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РІ СЌС‚РѕРј С‚РёРєРµС‚Рµ
     user_reply_block_permanent = Column(Boolean, default=False, nullable=False)
     user_reply_block_until = Column(AwareDateTime(), nullable=True)
 
@@ -2323,7 +2407,7 @@ class Ticket(Base):
     # SLA reminders
     last_sla_reminder_at = Column(AwareDateTime(), nullable=True)
 
-    # Связи
+    # РЎРІСЏР·Рё
     user = relationship('User', backref='tickets')
     messages = relationship('TicketMessage', back_populates='ticket', cascade='all, delete-orphan')
 
@@ -2354,17 +2438,17 @@ class Ticket(Base):
     @property
     def status_emoji(self) -> str:
         status_emojis = {
-            TicketStatus.OPEN.value: '🔴',
-            TicketStatus.ANSWERED.value: '🟡',
-            TicketStatus.CLOSED.value: '🟢',
-            TicketStatus.PENDING.value: '⏳',
+            TicketStatus.OPEN.value: 'рџ”ґ',
+            TicketStatus.ANSWERED.value: 'рџџЎ',
+            TicketStatus.CLOSED.value: 'рџџў',
+            TicketStatus.PENDING.value: 'вЏі',
         }
-        return status_emojis.get(self.status, '❓')
+        return status_emojis.get(self.status, 'вќ“')
 
     @property
     def priority_emoji(self) -> str:
-        priority_emojis = {'low': '🟢', 'normal': '🟡', 'high': '🟠', 'urgent': '🔴'}
-        return priority_emojis.get(self.priority, '🟡')
+        priority_emojis = {'low': 'рџџў', 'normal': 'рџџЎ', 'high': 'рџџ ', 'urgent': 'рџ”ґ'}
+        return priority_emojis.get(self.priority, 'рџџЎ')
 
     def __repr__(self):
         return f"<Ticket(id={self.id}, user_id={self.user_id}, status={self.status}, title='{self.title[:30]}...')>"
@@ -2380,7 +2464,7 @@ class TicketMessage(Base):
     message_text = Column(Text, nullable=False)
     is_from_admin = Column(Boolean, default=False, nullable=False)
 
-    # Для медиа файлов
+    # Р”Р»СЏ РјРµРґРёР° С„Р°Р№Р»РѕРІ
     has_media = Column(Boolean, default=False)
     media_type = Column(String(20), nullable=True)  # photo, video, document, voice, etc.
     media_file_id = Column(String(255), nullable=True)
@@ -2388,7 +2472,7 @@ class TicketMessage(Base):
 
     created_at = Column(AwareDateTime(), default=func.now())
 
-    # Связи
+    # РЎРІСЏР·Рё
     ticket = relationship('Ticket', back_populates='messages')
     user = relationship('User')
 
@@ -2462,15 +2546,15 @@ class MainMenuButton(Base):
 
 
 class MenuLayoutHistory(Base):
-    """История изменений конфигурации меню."""
+    """РСЃС‚РѕСЂРёСЏ РёР·РјРµРЅРµРЅРёР№ РєРѕРЅС„РёРіСѓСЂР°С†РёРё РјРµРЅСЋ."""
 
     __tablename__ = 'menu_layout_history'
 
     id = Column(Integer, primary_key=True, index=True)
-    config_json = Column(Text, nullable=False)  # Полная конфигурация в JSON
+    config_json = Column(Text, nullable=False)  # РџРѕР»РЅР°СЏ РєРѕРЅС„РёРіСѓСЂР°С†РёСЏ РІ JSON
     action = Column(String(50), nullable=False)  # update, reset, import
-    changes_summary = Column(Text, nullable=True)  # Краткое описание изменений
-    user_info = Column(String(255), nullable=True)  # Информация о пользователе/токене
+    changes_summary = Column(Text, nullable=True)  # РљСЂР°С‚РєРѕРµ РѕРїРёСЃР°РЅРёРµ РёР·РјРµРЅРµРЅРёР№
+    user_info = Column(String(255), nullable=True)  # РРЅС„РѕСЂРјР°С†РёСЏ Рѕ РїРѕР»СЊР·РѕРІР°С‚РµР»Рµ/С‚РѕРєРµРЅРµ
     created_at = Column(AwareDateTime(), default=func.now(), index=True)
 
     __table_args__ = (Index('ix_menu_layout_history_created', 'created_at'),)
@@ -2480,26 +2564,26 @@ class MenuLayoutHistory(Base):
 
 
 class ButtonClickLog(Base):
-    """Логи кликов по кнопкам меню."""
+    """Р›РѕРіРё РєР»РёРєРѕРІ РїРѕ РєРЅРѕРїРєР°Рј РјРµРЅСЋ."""
 
     __tablename__ = 'button_click_logs'
 
     id = Column(Integer, primary_key=True, index=True)
-    button_id = Column(String(100), nullable=False, index=True)  # ID кнопки
+    button_id = Column(String(100), nullable=False, index=True)  # ID РєРЅРѕРїРєРё
     user_id = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True)
-    callback_data = Column(String(255), nullable=True)  # callback_data кнопки
+    callback_data = Column(String(255), nullable=True)  # callback_data РєРЅРѕРїРєРё
     clicked_at = Column(AwareDateTime(), default=func.now(), index=True)
 
-    # Дополнительная информация
+    # Р”РѕРїРѕР»РЅРёС‚РµР»СЊРЅР°СЏ РёРЅС„РѕСЂРјР°С†РёСЏ
     button_type = Column(String(20), nullable=True, index=True)  # builtin, callback, url, mini_app
-    button_text = Column(String(255), nullable=True)  # Текст кнопки на момент клика
+    button_text = Column(String(255), nullable=True)  # РўРµРєСЃС‚ РєРЅРѕРїРєРё РЅР° РјРѕРјРµРЅС‚ РєР»РёРєР°
 
     __table_args__ = (
         Index('ix_button_click_logs_button_date', 'button_id', 'clicked_at'),
         Index('ix_button_click_logs_user_date', 'user_id', 'clicked_at'),
     )
 
-    # Связи
+    # РЎРІСЏР·Рё
     user = relationship('User', foreign_keys=[user_id])
 
     def __repr__(self) -> str:
@@ -2507,7 +2591,7 @@ class ButtonClickLog(Base):
 
 
 class Webhook(Base):
-    """Webhook конфигурация для подписки на события."""
+    """Webhook РєРѕРЅС„РёРіСѓСЂР°С†РёСЏ РґР»СЏ РїРѕРґРїРёСЃРєРё РЅР° СЃРѕР±С‹С‚РёСЏ."""
 
     __tablename__ = 'webhooks'
     __table_args__ = (
@@ -2518,7 +2602,7 @@ class Webhook(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
     url = Column(Text, nullable=False)
-    secret = Column(String(128), nullable=True)  # Секрет для подписи payload
+    secret = Column(String(128), nullable=True)  # РЎРµРєСЂРµС‚ РґР»СЏ РїРѕРґРїРёСЃРё payload
     event_type = Column(String(50), nullable=False)  # user.created, payment.completed, ticket.created, etc.
     is_active = Column(Boolean, default=True, nullable=False)
     description = Column(Text, nullable=True)
@@ -2536,7 +2620,7 @@ class Webhook(Base):
 
 
 class WebhookDelivery(Base):
-    """История доставки webhooks."""
+    """РСЃС‚РѕСЂРёСЏ РґРѕСЃС‚Р°РІРєРё webhooks."""
 
     __tablename__ = 'webhook_deliveries'
     __table_args__ = (
@@ -2547,9 +2631,9 @@ class WebhookDelivery(Base):
     id = Column(Integer, primary_key=True, index=True)
     webhook_id = Column(Integer, ForeignKey('webhooks.id', ondelete='CASCADE'), nullable=False)
     event_type = Column(String(50), nullable=False)
-    payload = Column(JSON, nullable=False)  # Отправленный payload
-    response_status = Column(Integer, nullable=True)  # HTTP статус ответа
-    response_body = Column(Text, nullable=True)  # Тело ответа (может быть обрезано)
+    payload = Column(JSON, nullable=False)  # РћС‚РїСЂР°РІР»РµРЅРЅС‹Р№ payload
+    response_status = Column(Integer, nullable=True)  # HTTP СЃС‚Р°С‚СѓСЃ РѕС‚РІРµС‚Р°
+    response_body = Column(Text, nullable=True)  # РўРµР»Рѕ РѕС‚РІРµС‚Р° (РјРѕР¶РµС‚ Р±С‹С‚СЊ РѕР±СЂРµР·Р°РЅРѕ)
     status = Column(String(20), nullable=False)  # pending, success, failed
     error_message = Column(Text, nullable=True)
     attempt_number = Column(Integer, default=1, nullable=False)
@@ -2600,30 +2684,30 @@ class CabinetRefreshToken(Base):
 
 
 class WheelConfig(Base):
-    """Глобальная конфигурация колеса удачи."""
+    """Р“Р»РѕР±Р°Р»СЊРЅР°СЏ РєРѕРЅС„РёРіСѓСЂР°С†РёСЏ РєРѕР»РµСЃР° СѓРґР°С‡Рё."""
 
     __tablename__ = 'wheel_configs'
 
     id = Column(Integer, primary_key=True, index=True)
 
-    # Основные настройки
+    # РћСЃРЅРѕРІРЅС‹Рµ РЅР°СЃС‚СЂРѕР№РєРё
     is_enabled = Column(Boolean, default=False, nullable=False)
-    name = Column(String(255), default='Колесо удачи', nullable=False)
+    name = Column(String(255), default='РљРѕР»РµСЃРѕ СѓРґР°С‡Рё', nullable=False)
 
-    # Стоимость спина
-    spin_cost_stars = Column(Integer, default=10, nullable=False)  # Стоимость в Stars
-    spin_cost_days = Column(Integer, default=1, nullable=False)  # Стоимость в днях подписки
+    # РЎС‚РѕРёРјРѕСЃС‚СЊ СЃРїРёРЅР°
+    spin_cost_stars = Column(Integer, default=10, nullable=False)  # РЎС‚РѕРёРјРѕСЃС‚СЊ РІ Stars
+    spin_cost_days = Column(Integer, default=1, nullable=False)  # РЎС‚РѕРёРјРѕСЃС‚СЊ РІ РґРЅСЏС… РїРѕРґРїРёСЃРєРё
     spin_cost_stars_enabled = Column(Boolean, default=True, nullable=False)
     spin_cost_days_enabled = Column(Boolean, default=True, nullable=False)
 
-    # RTP настройки (Return to Player) - процент возврата 0-100
+    # RTP РЅР°СЃС‚СЂРѕР№РєРё (Return to Player) - РїСЂРѕС†РµРЅС‚ РІРѕР·РІСЂР°С‚Р° 0-100
     rtp_percent = Column(Integer, default=80, nullable=False)
 
-    # Лимиты
-    daily_spin_limit = Column(Integer, default=5, nullable=False)  # 0 = без лимита
+    # Р›РёРјРёС‚С‹
+    daily_spin_limit = Column(Integer, default=5, nullable=False)  # 0 = Р±РµР· Р»РёРјРёС‚Р°
     min_subscription_days_for_day_payment = Column(Integer, default=3, nullable=False)
 
-    # Генерация промокодов
+    # Р“РµРЅРµСЂР°С†РёСЏ РїСЂРѕРјРѕРєРѕРґРѕРІ
     promo_prefix = Column(String(20), default='WHEEL', nullable=False)
     promo_validity_days = Column(Integer, default=7, nullable=False)
 
@@ -2637,31 +2721,31 @@ class WheelConfig(Base):
 
 
 class WheelPrize(Base):
-    """Приз на колесе удачи."""
+    """РџСЂРёР· РЅР° РєРѕР»РµСЃРµ СѓРґР°С‡Рё."""
 
     __tablename__ = 'wheel_prizes'
 
     id = Column(Integer, primary_key=True, index=True)
     config_id = Column(Integer, ForeignKey('wheel_configs.id', ondelete='CASCADE'), nullable=False)
 
-    # Тип и значение приза
+    # РўРёРї Рё Р·РЅР°С‡РµРЅРёРµ РїСЂРёР·Р°
     prize_type = Column(String(50), nullable=False)  # WheelPrizeType
-    prize_value = Column(Integer, default=0, nullable=False)  # Дни/копейки/GB в зависимости от типа
+    prize_value = Column(Integer, default=0, nullable=False)  # Р”РЅРё/РєРѕРїРµР№РєРё/GB РІ Р·Р°РІРёСЃРёРјРѕСЃС‚Рё РѕС‚ С‚РёРїР°
 
-    # Отображение
+    # РћС‚РѕР±СЂР°Р¶РµРЅРёРµ
     display_name = Column(String(100), nullable=False)
-    emoji = Column(String(10), default='🎁', nullable=False)
-    color = Column(String(20), default='#3B82F6', nullable=False)  # HEX цвет сектора
+    emoji = Column(String(10), default='рџЋЃ', nullable=False)
+    color = Column(String(20), default='#3B82F6', nullable=False)  # HEX С†РІРµС‚ СЃРµРєС‚РѕСЂР°
 
-    # Стоимость приза для расчета RTP (в копейках)
+    # РЎС‚РѕРёРјРѕСЃС‚СЊ РїСЂРёР·Р° РґР»СЏ СЂР°СЃС‡РµС‚Р° RTP (РІ РєРѕРїРµР№РєР°С…)
     prize_value_kopeks = Column(Integer, default=0, nullable=False)
 
-    # Порядок и вероятность
+    # РџРѕСЂСЏРґРѕРє Рё РІРµСЂРѕСЏС‚РЅРѕСЃС‚СЊ
     sort_order = Column(Integer, default=0, nullable=False)
-    manual_probability = Column(Float, nullable=True)  # Если задано - игнорирует RTP расчет (0.0-1.0)
+    manual_probability = Column(Float, nullable=True)  # Р•СЃР»Рё Р·Р°РґР°РЅРѕ - РёРіРЅРѕСЂРёСЂСѓРµС‚ RTP СЂР°СЃС‡РµС‚ (0.0-1.0)
     is_active = Column(Boolean, default=True, nullable=False)
 
-    # Настройки генерируемого промокода (только для prize_type=promocode)
+    # РќР°СЃС‚СЂРѕР№РєРё РіРµРЅРµСЂРёСЂСѓРµРјРѕРіРѕ РїСЂРѕРјРѕРєРѕРґР° (С‚РѕР»СЊРєРѕ РґР»СЏ prize_type=promocode)
     promo_balance_bonus_kopeks = Column(Integer, default=0)
     promo_subscription_days = Column(Integer, default=0)
     promo_traffic_gb = Column(Integer, default=0)
@@ -2677,7 +2761,7 @@ class WheelPrize(Base):
 
 
 class WheelSpin(Base):
-    """История спинов колеса удачи."""
+    """РСЃС‚РѕСЂРёСЏ СЃРїРёРЅРѕРІ РєРѕР»РµСЃР° СѓРґР°С‡Рё."""
 
     __tablename__ = 'wheel_spins'
     __table_args__ = (Index('ix_wheel_spins_user_created', 'user_id', 'created_at'),)
@@ -2686,21 +2770,21 @@ class WheelSpin(Base):
     user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     prize_id = Column(Integer, ForeignKey('wheel_prizes.id', ondelete='SET NULL'), nullable=True)
 
-    # Способ оплаты
+    # РЎРїРѕСЃРѕР± РѕРїР»Р°С‚С‹
     payment_type = Column(String(50), nullable=False)  # WheelSpinPaymentType
-    payment_amount = Column(Integer, nullable=False)  # Stars или дни
-    payment_value_kopeks = Column(Integer, nullable=False)  # Эквивалент в копейках для статистики
+    payment_amount = Column(Integer, nullable=False)  # Stars РёР»Рё РґРЅРё
+    payment_value_kopeks = Column(Integer, nullable=False)  # Р­РєРІРёРІР°Р»РµРЅС‚ РІ РєРѕРїРµР№РєР°С… РґР»СЏ СЃС‚Р°С‚РёСЃС‚РёРєРё
 
-    # Результат
-    prize_type = Column(String(50), nullable=False)  # Копируем из WheelPrize на момент спина
+    # Р РµР·СѓР»СЊС‚Р°С‚
+    prize_type = Column(String(50), nullable=False)  # РљРѕРїРёСЂСѓРµРј РёР· WheelPrize РЅР° РјРѕРјРµРЅС‚ СЃРїРёРЅР°
     prize_value = Column(Integer, nullable=False)
     prize_display_name = Column(String(100), nullable=False)
-    prize_value_kopeks = Column(Integer, nullable=False)  # Стоимость приза в копейках
+    prize_value_kopeks = Column(Integer, nullable=False)  # РЎС‚РѕРёРјРѕСЃС‚СЊ РїСЂРёР·Р° РІ РєРѕРїРµР№РєР°С…
 
-    # Сгенерированный промокод (если приз - промокод)
+    # РЎРіРµРЅРµСЂРёСЂРѕРІР°РЅРЅС‹Р№ РїСЂРѕРјРѕРєРѕРґ (РµСЃР»Рё РїСЂРёР· - РїСЂРѕРјРѕРєРѕРґ)
     generated_promocode_id = Column(Integer, ForeignKey('promocodes.id'), nullable=True)
 
-    # Флаг успешного начисления
+    # Р¤Р»Р°Рі СѓСЃРїРµС€РЅРѕРіРѕ РЅР°С‡РёСЃР»РµРЅРёСЏ
     is_applied = Column(Boolean, default=False, nullable=False)
     applied_at = Column(AwareDateTime(), nullable=True)
 
@@ -2712,12 +2796,12 @@ class WheelSpin(Base):
 
     @property
     def prize_value_rubles(self) -> float:
-        """Стоимость приза в рублях."""
+        """РЎС‚РѕРёРјРѕСЃС‚СЊ РїСЂРёР·Р° РІ СЂСѓР±Р»СЏС…."""
         return self.prize_value_kopeks / 100
 
     @property
     def payment_value_rubles(self) -> float:
-        """Стоимость оплаты в рублях."""
+        """РЎС‚РѕРёРјРѕСЃС‚СЊ РѕРїР»Р°С‚С‹ РІ СЂСѓР±Р»СЏС…."""
         return self.payment_value_kopeks / 100
 
     def __repr__(self) -> str:
@@ -2725,7 +2809,7 @@ class WheelSpin(Base):
 
 
 class TicketNotification(Base):
-    """Уведомления о тикетах для кабинета (веб-интерфейс)."""
+    """РЈРІРµРґРѕРјР»РµРЅРёСЏ Рѕ С‚РёРєРµС‚Р°С… РґР»СЏ РєР°Р±РёРЅРµС‚Р° (РІРµР±-РёРЅС‚РµСЂС„РµР№СЃ)."""
 
     __tablename__ = 'ticket_notifications'
     __table_args__ = (
@@ -2737,16 +2821,16 @@ class TicketNotification(Base):
     ticket_id = Column(Integer, ForeignKey('tickets.id', ondelete='CASCADE'), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
 
-    # Тип уведомления: new_ticket, admin_reply, user_reply
+    # РўРёРї СѓРІРµРґРѕРјР»РµРЅРёСЏ: new_ticket, admin_reply, user_reply
     notification_type = Column(String(50), nullable=False)
 
-    # Текст уведомления
+    # РўРµРєСЃС‚ СѓРІРµРґРѕРјР»РµРЅРёСЏ
     message = Column(Text, nullable=True)
 
-    # Для админа или для пользователя
+    # Р”Р»СЏ Р°РґРјРёРЅР° РёР»Рё РґР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
     is_for_admin = Column(Boolean, default=False, nullable=False)
 
-    # Прочитано ли уведомление
+    # РџСЂРѕС‡РёС‚Р°РЅРѕ Р»Рё СѓРІРµРґРѕРјР»РµРЅРёРµ
     is_read = Column(Boolean, default=False, nullable=False)
 
     created_at = Column(AwareDateTime(), default=func.now())
@@ -2763,44 +2847,44 @@ class TicketNotification(Base):
 
 
 class PaymentMethodConfig(Base):
-    """Конфигурация отображения платёжных методов в кабинете."""
+    """РљРѕРЅС„РёРіСѓСЂР°С†РёСЏ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ РїР»Р°С‚С‘Р¶РЅС‹С… РјРµС‚РѕРґРѕРІ РІ РєР°Р±РёРЅРµС‚Рµ."""
 
     __tablename__ = 'payment_method_configs'
 
     id = Column(Integer, primary_key=True, index=True)
 
-    # Уникальный идентификатор метода (совпадает с PaymentMethod enum: 'yookassa', 'cryptobot' и т.д.)
+    # РЈРЅРёРєР°Р»СЊРЅС‹Р№ РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ РјРµС‚РѕРґР° (СЃРѕРІРїР°РґР°РµС‚ СЃ PaymentMethod enum: 'yookassa', 'cryptobot' Рё С‚.Рґ.)
     method_id = Column(String(50), unique=True, nullable=False, index=True)
 
-    # Порядок отображения (меньше = выше)
+    # РџРѕСЂСЏРґРѕРє РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ (РјРµРЅСЊС€Рµ = РІС‹С€Рµ)
     sort_order = Column(Integer, nullable=False, default=0, index=True)
 
-    # Включён/выключен (дополнительно к env-переменным)
+    # Р’РєР»СЋС‡С‘РЅ/РІС‹РєР»СЋС‡РµРЅ (РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅРѕ Рє env-РїРµСЂРµРјРµРЅРЅС‹Рј)
     is_enabled = Column(Boolean, nullable=False, default=True)
 
-    # Переопределение отображаемого имени (null = использовать из env)
+    # РџРµСЂРµРѕРїСЂРµРґРµР»РµРЅРёРµ РѕС‚РѕР±СЂР°Р¶Р°РµРјРѕРіРѕ РёРјРµРЅРё (null = РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ РёР· env)
     display_name = Column(String(255), nullable=True)
 
-    # Под-опции включения/выключения (JSON): {"card": true, "sbp": false}
-    # Для методов с вариантами: yookassa, pal24, platega
+    # РџРѕРґ-РѕРїС†РёРё РІРєР»СЋС‡РµРЅРёСЏ/РІС‹РєР»СЋС‡РµРЅРёСЏ (JSON): {"card": true, "sbp": false}
+    # Р”Р»СЏ РјРµС‚РѕРґРѕРІ СЃ РІР°СЂРёР°РЅС‚Р°РјРё: yookassa, pal24, platega
     sub_options = Column(JSON, nullable=True, default=None)
 
-    # Переопределение мин/макс сумм (null = из env)
+    # РџРµСЂРµРѕРїСЂРµРґРµР»РµРЅРёРµ РјРёРЅ/РјР°РєСЃ СЃСѓРјРј (null = РёР· env)
     min_amount_kopeks = Column(Integer, nullable=True)
     max_amount_kopeks = Column(Integer, nullable=True)
 
-    # --- Условия отображения ---
+    # --- РЈСЃР»РѕРІРёСЏ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ ---
 
-    # Фильтр по типу пользователя: 'all', 'telegram', 'email'
+    # Р¤РёР»СЊС‚СЂ РїРѕ С‚РёРїСѓ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ: 'all', 'telegram', 'email'
     user_type_filter = Column(String(20), nullable=False, default='all')
 
-    # Фильтр по первому пополнению: 'any', 'yes' (делал), 'no' (не делал)
+    # Р¤РёР»СЊС‚СЂ РїРѕ РїРµСЂРІРѕРјСѓ РїРѕРїРѕР»РЅРµРЅРёСЋ: 'any', 'yes' (РґРµР»Р°Р»), 'no' (РЅРµ РґРµР»Р°Р»)
     first_topup_filter = Column(String(10), nullable=False, default='any')
 
-    # Режим фильтра промо-групп: 'all' (все видят), 'selected' (только выбранные)
+    # Р РµР¶РёРј С„РёР»СЊС‚СЂР° РїСЂРѕРјРѕ-РіСЂСѓРїРї: 'all' (РІСЃРµ РІРёРґСЏС‚), 'selected' (С‚РѕР»СЊРєРѕ РІС‹Р±СЂР°РЅРЅС‹Рµ)
     promo_group_filter_mode = Column(String(20), nullable=False, default='all')
 
-    # M2M связь с промогруппами
+    # M2M СЃРІСЏР·СЊ СЃ РїСЂРѕРјРѕРіСЂСѓРїРїР°РјРё
     allowed_promo_groups = relationship(
         'PromoGroup',
         secondary=payment_method_promo_groups,
@@ -2861,7 +2945,7 @@ class UserChannelSubscription(Base):
         )
 
 
-# ── RBAC / ABAC models ──────────────────────────────────────────────────
+# в”Ђв”Ђ RBAC / ABAC models в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 
 class AdminRole(Base):
@@ -2966,3 +3050,5 @@ class AdminAuditLog(Base):
 
     def __repr__(self) -> str:
         return f'<AdminAuditLog id={self.id} action={self.action!r} status={self.status!r}>'
+
+
