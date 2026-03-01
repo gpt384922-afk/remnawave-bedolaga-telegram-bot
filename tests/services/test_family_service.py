@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.cabinet.routes.subscription import delete_device
@@ -272,6 +273,51 @@ async def test_accept_family_invite_marks_statuses(monkeypatch):
     assert invite.status == 'accepted'
     assert invite.decided_at is not None
     assert db.add.called
+
+
+async def test_accept_family_invite_returns_conflict_on_unique_violation(monkeypatch):
+    owner = _make_owner(family_enabled=True, family_max_members=5)
+    owner.remnawave_uuid = None
+    group = SimpleNamespace(id=51, owner_user_id=owner.id)
+    invite = SimpleNamespace(
+        id=13,
+        invitee_user_id=2,
+        family_group_id=group.id,
+        inviter_user_id=owner.id,
+        status='pending',
+        created_at=datetime.now(UTC),
+        expires_at=datetime.now(UTC) + timedelta(days=1),
+        decided_at=None,
+    )
+    member_user = SimpleNamespace(id=2, username='member', telegram_id=222)
+
+    monkeypatch.setattr(family_service, '_invite_for_update', AsyncMock(return_value=invite))
+    monkeypatch.setattr(family_service, '_load_user', AsyncMock(return_value=owner))
+    monkeypatch.setattr(family_service, '_in_active_family', AsyncMock(return_value=False))
+    monkeypatch.setattr(family_service, '_active_member_count', AsyncMock(return_value=0))
+
+    db = AsyncMock(spec=AsyncSession)
+    db.execute = AsyncMock(
+        side_effect=[
+            FakeScalarResult(value=group),  # group for update
+            FakeScalarResult(value=None),  # family member lookup
+        ]
+    )
+    db.add = MagicMock()
+    db.commit = AsyncMock(
+        side_effect=IntegrityError(
+            'UPDATE family_invites SET status = :status',
+            {'status': 'accepted'},
+            Exception('uq_family_invites_pending_tuple'),
+        )
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        await family_service.accept_family_invite(db, member_user, invite.id)
+
+    assert exc.value.status_code == 409
+    assert exc.value.detail == 'Invite status conflict. Please refresh and try again.'
+    db.rollback.assert_awaited()
 
 
 async def test_decline_family_invite_marks_statuses(monkeypatch):

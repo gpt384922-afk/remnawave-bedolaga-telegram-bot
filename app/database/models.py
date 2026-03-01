@@ -27,6 +27,7 @@ from sqlalchemy import (
     Time,
     TypeDecorator,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
@@ -1398,7 +1399,13 @@ class FamilyMember(Base):
 class FamilyInvite(Base):
     __tablename__ = 'family_invites'
     __table_args__ = (
-        UniqueConstraint('family_group_id', 'invitee_user_id', 'status', name='uq_family_invites_pending_tuple'),
+        Index(
+            'uq_family_invites_pending_tuple',
+            'family_group_id',
+            'invitee_user_id',
+            unique=True,
+            postgresql_where=text("status = 'pending'"),
+        ),
         Index('ix_family_invites_invitee_status', 'invitee_user_id', 'status'),
     )
     id = Column(Integer, primary_key=True, index=True)

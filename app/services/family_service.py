@@ -11,6 +11,7 @@ from aiogram.enums import ParseMode
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -33,6 +34,11 @@ INVITE_ACCEPTED = 'accepted'
 INVITE_DECLINED = 'declined'
 INVITE_REVOKED = 'revoked'
 INVITE_EXPIRED = 'expired'
+
+
+def _is_family_invite_status_conflict(exc: IntegrityError) -> bool:
+    message = str(getattr(exc, 'orig', exc))
+    return 'uq_family_invites_pending_tuple' in message
 
 
 @dataclass
@@ -635,7 +641,16 @@ async def accept_family_invite(db: AsyncSession, user: User, invite_id: int) -> 
         member.accepted_at = now
         member.removed_at = None
 
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        if _is_family_invite_status_conflict(exc):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail='Invite status conflict. Please refresh and try again.',
+            ) from exc
+        raise
 
     if owner and owner.remnawave_uuid:
         try:

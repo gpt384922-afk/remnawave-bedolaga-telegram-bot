@@ -1,5 +1,6 @@
 ﻿import structlog
 from aiogram import Dispatcher, F, types
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.models import User
@@ -23,14 +24,19 @@ async def handle_family_invite_accept(callback: types.CallbackQuery, db_user: Us
         await callback.answer('Invalid invite', show_alert=True)
         return
 
+    user_id = getattr(db_user, 'id', None)
     try:
         await accept_family_invite(db, db_user, invite_id)
         if callback.message:
             await callback.message.edit_text('Family invitation accepted.')
         await callback.answer('Accepted')
     except Exception as exc:
-        logger.warning('Failed to accept family invite', user_id=db_user.id, invite_id=invite_id, exc=exc)
-        await callback.answer('Failed to accept invite', show_alert=True)
+        await db.rollback()
+        message = 'Failed to accept invite'
+        if isinstance(exc, HTTPException) and isinstance(exc.detail, str):
+            message = exc.detail
+        logger.warning('Failed to accept family invite', user_id=user_id, invite_id=invite_id, exc=exc)
+        await callback.answer(message, show_alert=True)
 
 
 async def handle_family_invite_decline(callback: types.CallbackQuery, db_user: User, db: AsyncSession):
@@ -39,14 +45,19 @@ async def handle_family_invite_decline(callback: types.CallbackQuery, db_user: U
         await callback.answer('Invalid invite', show_alert=True)
         return
 
+    user_id = getattr(db_user, 'id', None)
     try:
         await decline_family_invite(db, db_user, invite_id)
         if callback.message:
             await callback.message.edit_text('Family invitation declined.')
         await callback.answer('Declined')
     except Exception as exc:
-        logger.warning('Failed to decline family invite', user_id=db_user.id, invite_id=invite_id, exc=exc)
-        await callback.answer('Failed to decline invite', show_alert=True)
+        await db.rollback()
+        message = 'Failed to decline invite'
+        if isinstance(exc, HTTPException) and isinstance(exc.detail, str):
+            message = exc.detail
+        logger.warning('Failed to decline family invite', user_id=user_id, invite_id=invite_id, exc=exc)
+        await callback.answer(message, show_alert=True)
 
 
 def register_handlers(dp: Dispatcher):
