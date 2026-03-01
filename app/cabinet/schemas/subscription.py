@@ -74,6 +74,10 @@ class SubscriptionStatusResponse(BaseModel):
     subscription: SubscriptionData | None = None
     active_subscription: SubscriptionData | None = None
     can_invite_family: bool = False
+    effective_subscription_active: bool = False
+    effective_subscription_expires_at: datetime | None = None
+    effective_subscription_source: str | None = None
+    effective_subscription: SubscriptionData | None = None
 
 
 class RenewalOptionResponse(BaseModel):

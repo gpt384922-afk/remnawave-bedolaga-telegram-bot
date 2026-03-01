@@ -22,6 +22,7 @@ from app.database.crud.tariff import get_tariff_by_id, get_tariffs_for_user
 from app.database.crud.transaction import create_transaction
 from app.database.crud.user import subtract_user_balance
 from app.database.models import FamilyDevice, ServerSquad, Subscription, Tariff, TransactionType, User
+from app.services.effective_subscription_service import resolve_effective_subscription
 from app.services.notification_delivery_service import (
     NotificationType,
     notification_delivery_service,
@@ -247,44 +248,27 @@ def _subscription_to_response(
     )
 
 
-@router.get('', response_model=SubscriptionStatusResponse)
-async def get_subscription(
-    user: User = Depends(get_current_cabinet_user),
-    db: AsyncSession = Depends(get_cabinet_db),
-):
-    """Get current user's subscription details."""
-    # Reload user from current session to get fresh data
-    # (user object is from different session in get_current_cabinet_user)
-    from app.database.crud.user import get_user_by_id
+async def _build_subscription_data(
+    db: AsyncSession,
+    subscription: Subscription | None,
+) -> SubscriptionData | None:
+    if not subscription:
+        return None
 
-    fresh_user = await get_user_by_id(db, user.id)
-
-    if not fresh_user or not fresh_user.subscription:
-        # Return 200 with has_subscription: false instead of 404
-        return SubscriptionStatusResponse(
-            has_subscription=False,
-            has_active_subscription=False,
-            can_invite_family=False,
-            subscription=None,
-            active_subscription=None,
-        )
-
-    status_updated = mark_subscription_expired_if_needed(fresh_user.subscription)
+    status_updated = mark_subscription_expired_if_needed(subscription)
     if status_updated:
         await db.commit()
-        await db.refresh(fresh_user.subscription)
+        await db.refresh(subscription)
 
-    # Load tariff for daily subscription check and tariff name
     tariff_name = None
-    if fresh_user.subscription.tariff_id:
-        tariff = await get_tariff_by_id(db, fresh_user.subscription.tariff_id)
+    if subscription.tariff_id:
+        tariff = await get_tariff_by_id(db, subscription.tariff_id)
         if tariff:
-            fresh_user.subscription.tariff = tariff
+            subscription.tariff = tariff
             tariff_name = tariff.name
 
-    # Fetch server names for connected squads
     servers: list[ServerInfo] = []
-    connected_squads = fresh_user.subscription.connected_squads or []
+    connected_squads = subscription.connected_squads or []
     if connected_squads:
         result = await db.execute(select(ServerSquad).where(ServerSquad.squad_uuid.in_(connected_squads)))
         server_squads = result.scalars().all()
@@ -292,20 +276,19 @@ async def get_subscription(
             ServerInfo(uuid=sq.squad_uuid, name=sq.display_name, country_code=sq.country_code) for sq in server_squads
         ]
 
-    # Fetch traffic purchases (monthly packages)
-    traffic_purchases_data = []
     from app.database.models import TrafficPurchase
 
     now = datetime.now(UTC)
     purchases_query = (
         select(TrafficPurchase)
-        .where(TrafficPurchase.subscription_id == fresh_user.subscription.id)
+        .where(TrafficPurchase.subscription_id == subscription.id)
         .where(TrafficPurchase.expires_at > now)
         .order_by(TrafficPurchase.expires_at.asc())
     )
     purchases_result = await db.execute(purchases_query)
     purchases = purchases_result.scalars().all()
 
+    traffic_purchases_data = []
     for purchase in purchases:
         time_remaining = purchase.expires_at - now
         days_remaining = max(0, int(time_remaining.total_seconds() / 86400))
@@ -326,24 +309,75 @@ async def get_subscription(
             }
         )
 
-    subscription_data = _subscription_to_response(fresh_user.subscription, servers, tariff_name, traffic_purchases_data)
-    has_active_subscription = is_subscription_active(fresh_user.subscription)
-    active_subscription = subscription_data if has_active_subscription else None
+    return _subscription_to_response(subscription, servers, tariff_name, traffic_purchases_data)
 
-    tariff = getattr(fresh_user.subscription, 'tariff', None)
+
+@router.get('', response_model=SubscriptionStatusResponse)
+async def get_subscription(
+    user: User = Depends(get_current_cabinet_user),
+    db: AsyncSession = Depends(get_cabinet_db),
+):
+    """Get current user's subscription details."""
+    # Reload user from current session to get fresh data.
+    from app.database.crud.user import get_user_by_id
+
+    fresh_user = await get_user_by_id(db, user.id)
+    if not fresh_user:
+        return SubscriptionStatusResponse(
+            has_subscription=False,
+            has_active_subscription=False,
+            can_invite_family=False,
+            subscription=None,
+            active_subscription=None,
+            effective_subscription_active=False,
+            effective_subscription_expires_at=None,
+            effective_subscription_source=None,
+            effective_subscription=None,
+        )
+
+    effective = await resolve_effective_subscription(db, fresh_user)
+    display_subscription = effective.subscription or fresh_user.subscription
+
+    if not display_subscription:
+        return SubscriptionStatusResponse(
+            has_subscription=False,
+            has_active_subscription=False,
+            can_invite_family=False,
+            subscription=None,
+            active_subscription=None,
+            effective_subscription_active=False,
+            effective_subscription_expires_at=None,
+            effective_subscription_source=None,
+            effective_subscription=None,
+        )
+
+    subscription_data = await _build_subscription_data(db, display_subscription)
+
+    active_subscription_data = None
+    if effective.active and effective.subscription:
+        if subscription_data and display_subscription.id == effective.subscription.id:
+            active_subscription_data = subscription_data
+        else:
+            active_subscription_data = await _build_subscription_data(db, effective.subscription)
+
     can_invite_family = bool(
-        has_active_subscription
-        and tariff
-        and tariff.family_enabled
-        and int(tariff.family_max_members or 0) > 1
+        effective.active
+        and effective.source == 'personal'
+        and effective.tariff
+        and effective.tariff.family_enabled
+        and int(effective.tariff.family_max_members or 0) > 1
     )
 
     return SubscriptionStatusResponse(
         has_subscription=True,
-        has_active_subscription=has_active_subscription,
+        has_active_subscription=effective.active,
         can_invite_family=can_invite_family,
         subscription=subscription_data,
-        active_subscription=active_subscription,
+        active_subscription=active_subscription_data,
+        effective_subscription_active=effective.active,
+        effective_subscription_expires_at=effective.expires_at,
+        effective_subscription_source=effective.source,
+        effective_subscription=active_subscription_data,
     )
 
 
@@ -3142,32 +3176,23 @@ async def get_connection_link(
         get_happ_cryptolink_redirect_link,
     )
 
-    await db.refresh(user, ['subscription'])
+    effective = await resolve_effective_subscription(db, user)
+    subscription = effective.subscription if effective.active else None
 
-    if not user.subscription:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail='No subscription found',
-        )
-
-    if mark_subscription_expired_if_needed(user.subscription):
-        await db.commit()
-        await db.refresh(user, ['subscription'])
-
-    if not is_subscription_active(user.subscription):
+    if not subscription:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail='No active subscription',
         )
 
-    subscription_url = user.subscription.subscription_url
+    subscription_url = subscription.subscription_url
     if not subscription_url:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail='Subscription link not yet generated',
         )
 
-    display_link = get_display_subscription_link(user.subscription)
+    display_link = get_display_subscription_link(subscription)
     happ_redirect = get_happ_cryptolink_redirect_link(subscription_url) if settings.is_happ_cryptolink_mode() else None
     happ_scheme_link = (
         convert_subscription_link_to_happ_scheme(subscription_url) if settings.is_happ_cryptolink_mode() else None
@@ -3263,17 +3288,12 @@ async def get_app_config(
     db: AsyncSession = Depends(get_cabinet_db),
 ) -> dict[str, Any]:
     """Get app configuration for connection with deep links."""
-    await db.refresh(user, ['subscription'])
-
     subscription_url = None
     subscription_crypto_link = None
-    if user.subscription:
-        if mark_subscription_expired_if_needed(user.subscription):
-            await db.commit()
-            await db.refresh(user, ['subscription'])
-        if is_subscription_active(user.subscription):
-            subscription_url = user.subscription.subscription_url
-            subscription_crypto_link = user.subscription.subscription_crypto_link
+    effective = await resolve_effective_subscription(db, user)
+    if effective.active and effective.subscription:
+        subscription_url = effective.subscription.subscription_url
+        subscription_crypto_link = effective.subscription.subscription_crypto_link
 
     config = await _load_app_config_async()
 

@@ -30,6 +30,10 @@ from app.database.crud.user import (
 from app.database.models import CabinetRefreshToken, User
 from app.services.campaign_service import AdvertisingCampaignService
 from app.services.disposable_email_service import disposable_email_service
+from app.services.effective_subscription_service import (
+    EffectiveSubscriptionResult,
+    resolve_effective_subscription,
+)
 from app.services.referral_service import process_referral_registration
 from app.utils.timezone import panel_datetime_to_utc
 
@@ -81,8 +85,9 @@ logger = structlog.get_logger(__name__)
 router = APIRouter(prefix='/auth', tags=['Cabinet Auth'])
 
 
-def _user_to_response(user: User) -> UserResponse:
+def _user_to_response(user: User, effective: EffectiveSubscriptionResult | None = None) -> UserResponse:
     """Convert User model to UserResponse."""
+    effective_tariff = effective.tariff if effective else None
     return UserResponse(
         id=user.id,
         telegram_id=user.telegram_id,
@@ -96,13 +101,19 @@ def _user_to_response(user: User) -> UserResponse:
         referral_code=user.referral_code,
         language=user.language,
         created_at=user.created_at,
-        auth_type=getattr(user, 'auth_type', 'telegram'),  # Поддержка старых записей
+        auth_type=getattr(user, 'auth_type', 'telegram'),
+        effective_subscription_active=effective.active if effective else False,
+        effective_subscription_expires_at=effective.expires_at if effective else None,
+        effective_subscription_source=effective.source if effective else None,
+        effective_subscription_tariff_id=effective_tariff.id if effective_tariff else None,
+        effective_subscription_tariff_name=effective_tariff.name if effective_tariff else None,
     )
 
 
 async def _create_auth_response(user: User, db: AsyncSession) -> AuthResponse:
     """Create full auth response with tokens and RBAC permissions."""
     user_permissions, user_role_names, user_role_level = await UserRoleCRUD.get_user_permissions(db, user.id)
+    effective = await resolve_effective_subscription(db, user)
 
     access_token = create_access_token(
         user.id,
@@ -119,7 +130,7 @@ async def _create_auth_response(user: User, db: AsyncSession) -> AuthResponse:
         refresh_token=refresh_token,
         token_type='bearer',
         expires_in=expires_in,
-        user=_user_to_response(user),
+        user=_user_to_response(user, effective),
     )
 
 
@@ -442,7 +453,7 @@ async def auth_telegram(
     # Process campaign bonus
     response.campaign_bonus = await _process_campaign_bonus(db, user, request.campaign_slug)
     if response.campaign_bonus:
-        response.user = _user_to_response(user)
+        response.user = _user_to_response(user, await resolve_effective_subscription(db, user))
 
     return response
 
@@ -520,7 +531,7 @@ async def auth_telegram_widget(
     # Process campaign bonus
     response.campaign_bonus = await _process_campaign_bonus(db, user, request.campaign_slug)
     if response.campaign_bonus:
-        response.user = _user_to_response(user)
+        response.user = _user_to_response(user, await resolve_effective_subscription(db, user))
 
     return response
 
@@ -792,7 +803,7 @@ async def verify_email(
     # Process campaign bonus
     response.campaign_bonus = await _process_campaign_bonus(db, user, request.campaign_slug)
     if response.campaign_bonus:
-        response.user = _user_to_response(user)
+        response.user = _user_to_response(user, await resolve_effective_subscription(db, user))
 
     return response
 
@@ -939,7 +950,7 @@ async def login_email(
     # Process campaign bonus
     response.campaign_bonus = await _process_campaign_bonus(db, user, request.campaign_slug)
     if response.campaign_bonus:
-        response.user = _user_to_response(user)
+        response.user = _user_to_response(user, await resolve_effective_subscription(db, user))
 
     return response
 
@@ -1122,9 +1133,10 @@ async def reset_password(
 @router.get('/me', response_model=UserResponse)
 async def get_current_user(
     user: User = Depends(get_current_cabinet_user),
+    db: AsyncSession = Depends(get_cabinet_db),
 ):
     """Get current authenticated user info."""
-    return _user_to_response(user)
+    return _user_to_response(user, await resolve_effective_subscription(db, user))
 
 
 @router.get('/me/permissions')

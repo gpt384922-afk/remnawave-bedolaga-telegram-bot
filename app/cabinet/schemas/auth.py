@@ -89,7 +89,7 @@ class UserResponse(BaseModel):
     """User data response."""
 
     id: int
-    telegram_id: int | None = None  # Nullable для email-only пользователей
+    telegram_id: int | None = None  # Nullable for email-only users
     username: str | None = None
     first_name: str | None = None
     last_name: str | None = None
@@ -100,7 +100,12 @@ class UserResponse(BaseModel):
     referral_code: str | None = None
     language: str = 'ru'
     created_at: datetime
-    auth_type: str = 'telegram'  # "telegram" или "email"
+    auth_type: str = 'telegram'  # "telegram" or "email"
+    effective_subscription_active: bool = False
+    effective_subscription_expires_at: datetime | None = None
+    effective_subscription_source: str | None = None
+    effective_subscription_tariff_id: int | None = None
+    effective_subscription_tariff_name: str | None = None
 
     class Config:
         from_attributes = True
@@ -163,3 +168,4 @@ class EmailChangeResponse(BaseModel):
     message: str = Field(..., description='Success message')
     new_email: str = Field(..., description='New email address pending verification')
     expires_in_minutes: int = Field(..., description='Code expiration time in minutes')
+
