@@ -13,6 +13,7 @@ from .admin_email_templates import router as admin_email_templates_router
 from .admin_partners import router as admin_partners_router
 from .admin_payment_methods import router as admin_payment_methods_router
 from .admin_payments import router as admin_payments_router
+from .admin_personal_vpn import router as admin_personal_vpn_router
 from .admin_pinned_messages import router as admin_pinned_messages_router
 from .admin_policies import router as admin_policies_router
 from .admin_promo_offers import router as admin_promo_offers_router
@@ -39,6 +40,7 @@ from .media import router as media_router
 from .notifications import router as notifications_router
 from .oauth import router as oauth_router
 from .partner_application import router as partner_application_router
+from .personal_vpn import router as personal_vpn_router
 from .polls import router as polls_router
 from .promo import router as promo_router
 from .promocode import router as promocode_router
@@ -62,6 +64,7 @@ router.include_router(auth_router)
 router.include_router(oauth_router)
 router.include_router(subscription_router)
 router.include_router(family_router)
+router.include_router(personal_vpn_router)
 router.include_router(balance_router)
 router.include_router(referral_router)
 router.include_router(partner_application_router)
@@ -99,6 +102,7 @@ router.include_router(admin_withdrawals_router)
 router.include_router(admin_users_router)
 router.include_router(admin_payment_methods_router)
 router.include_router(admin_payments_router)
+router.include_router(admin_personal_vpn_router)
 router.include_router(admin_promo_offers_router)
 router.include_router(admin_remnawave_router)
 router.include_router(admin_email_templates_router)

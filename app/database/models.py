@@ -1070,6 +1070,7 @@ class User(Base):
     family_memberships = relationship('FamilyMember', foreign_keys='[FamilyMember.user_id]', back_populates='user')
     sent_family_invites = relationship('FamilyInvite', foreign_keys='[FamilyInvite.inviter_user_id]', back_populates='inviter')
     received_family_invites = relationship('FamilyInvite', foreign_keys='[FamilyInvite.invitee_user_id]', back_populates='invitee')
+    personal_vpn_instance = relationship('PersonalVPNInstance', back_populates='owner', uselist=False)
 
     # РћРіСЂР°РЅРёС‡РµРЅРёСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
     restriction_topup = Column(Boolean, default=False, nullable=False)  # Р—Р°РїСЂРµС‚ РїРѕРїРѕР»РЅРµРЅРёСЏ
@@ -1430,6 +1431,43 @@ class FamilyDevice(Base):
     family_group = relationship('FamilyGroup', back_populates='devices')
     owner_user = relationship('User', foreign_keys=[owner_user_id])
     subscription_user = relationship('User', foreign_keys=[subscription_user_id])
+
+
+class PersonalVPNInstance(Base):
+    __tablename__ = 'personal_vpn_instances'
+    id = Column(Integer, primary_key=True, index=True)
+    owner_user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, unique=True, index=True)
+    remnawave_node_id = Column(String(255), nullable=False)
+    remnawave_squad_id = Column(String(255), nullable=False)
+    expires_at = Column(AwareDateTime(), nullable=False)
+    status = Column(String(20), nullable=False, default='active')
+    max_users = Column(Integer, nullable=False, default=1)
+    last_restart_at = Column(AwareDateTime(), nullable=True)
+    created_at = Column(AwareDateTime(), default=func.now(), nullable=False)
+    updated_at = Column(AwareDateTime(), default=func.now(), onupdate=func.now(), nullable=False)
+
+    owner = relationship('User', back_populates='personal_vpn_instance')
+    users = relationship('PersonalVPNUser', back_populates='instance', cascade='all, delete-orphan')
+
+
+class PersonalVPNUser(Base):
+    __tablename__ = 'personal_vpn_users'
+    __table_args__ = (
+        UniqueConstraint('instance_id', 'remnawave_user_id', name='uq_personal_vpn_users_instance_remnawave_user'),
+        Index('ix_personal_vpn_users_instance_deleted', 'instance_id', 'deleted_at'),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    instance_id = Column(Integer, ForeignKey('personal_vpn_instances.id', ondelete='CASCADE'), nullable=False)
+    remnawave_user_id = Column(String(255), nullable=False)
+    expires_at = Column(AwareDateTime(), nullable=False)
+    device_limit = Column(Integer, nullable=False, default=1)
+    traffic_limit_bytes = Column(BigInteger, nullable=False, default=0)
+    subscription_link = Column(Text, nullable=True)
+    created_at = Column(AwareDateTime(), default=func.now(), nullable=False)
+    deleted_at = Column(AwareDateTime(), nullable=True)
+
+    instance = relationship('PersonalVPNInstance', back_populates='users')
 
 
 class TrafficPurchase(Base):

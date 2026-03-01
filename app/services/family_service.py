@@ -24,6 +24,7 @@ logger = structlog.get_logger(__name__)
 MEMBER_ACTIVE = 'active'
 MEMBER_INVITED = 'invited'
 MEMBER_DECLINED = 'declined'
+MEMBER_LEFT = 'left'
 MEMBER_REMOVED = 'removed'
 
 INVITE_PENDING = 'pending'
@@ -293,7 +294,10 @@ async def get_family_overview(db: AsyncSession, user: User) -> dict[str, Any]:
         (
             await db.execute(
                 select(FamilyMember)
-                .where(FamilyMember.family_group_id == group.id)
+                .where(
+                    FamilyMember.family_group_id == group.id,
+                    FamilyMember.status.in_((MEMBER_ACTIVE, MEMBER_INVITED)),
+                )
                 .options(selectinload(FamilyMember.user))
                 .order_by(FamilyMember.invited_at.desc())
             )
@@ -306,7 +310,10 @@ async def get_family_overview(db: AsyncSession, user: User) -> dict[str, Any]:
         (
             await db.execute(
                 select(FamilyInvite)
-                .where(FamilyInvite.family_group_id == group.id)
+                .where(
+                    FamilyInvite.family_group_id == group.id,
+                    FamilyInvite.status == INVITE_PENDING,
+                )
                 .options(selectinload(FamilyInvite.invitee))
                 .order_by(FamilyInvite.created_at.desc())
             )
@@ -408,7 +415,11 @@ async def create_family_invite(db: AsyncSession, owner_user: User, tg_username: 
 
     invitee = (
         (
-            await db.execute(select(User).where(func.lower(User.username) == normalized))
+            await db.execute(
+                select(User)
+                .where(func.lower(User.username) == normalized)
+                .options(selectinload(User.subscription))
+            )
         )
         .scalars()
         .first()
@@ -417,6 +428,16 @@ async def create_family_invite(db: AsyncSession, owner_user: User, tg_username: 
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='User must start the bot first')
     if invitee.id == owner.id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='You cannot invite yourself')
+    invitee_subscription = getattr(invitee, 'subscription', None)
+    if invitee_subscription and invitee_subscription.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                'error_code': 'INVITEE_HAS_ACTIVE_SUBSCRIPTION',
+                'message': 'Cannot invite user with active subscription',
+                'message_ru': 'Нельзя пригласить пользователя с активной подпиской',
+            },
+        )
     if await _in_active_family(db, invitee.id):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='User is already in another family')
 
@@ -836,7 +857,7 @@ async def leave_family(db: AsyncSession, user: User) -> None:
     if not member:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Active family membership not found')
 
-    member.status = MEMBER_REMOVED
+    member.status = MEMBER_LEFT
     member.removed_at = datetime.now(UTC)
     await _remove_member_devices(db, group_id=ctx.group.id, member_user_id=user.id, owner_uuid=ctx.owner.remnawave_uuid)
     await db.commit()
