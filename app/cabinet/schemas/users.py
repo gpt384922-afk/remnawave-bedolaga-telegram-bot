@@ -67,7 +67,7 @@ class UserSubscriptionInfo(BaseModel):
     is_active: bool = False
     days_remaining: int = 0
     purchased_traffic_gb: int = 0
-    traffic_purchases: list[TrafficPurchaseItem] = []
+    traffic_purchases: list[TrafficPurchaseItem] = Field(default_factory=list)
 
 
 class UserPromoGroupInfo(BaseModel):
@@ -193,6 +193,7 @@ class UserDetailResponse(BaseModel):
 
     # Subscription
     subscription: UserSubscriptionInfo | None = None
+    subscriptions: list[UserSubscriptionInfo] = Field(default_factory=list)
 
     # Promo group
     promo_group: UserPromoGroupInfo | None = None
@@ -201,8 +202,10 @@ class UserDetailResponse(BaseModel):
     referral: UserReferralInfo
 
     # Family
-    family_as_owner: list[UserFamilyMemberInfo] = []
+    family_as_owner: list[UserFamilyMemberInfo] = Field(default_factory=list)
     family_as_member: UserFamilyOwnerInfo | None = None
+    family_members: list[UserFamilyMemberInfo] = Field(default_factory=list)
+    family_invites: list[dict[str, Any]] = Field(default_factory=list)
 
     # Stats
     total_spent_kopeks: int = 0
@@ -226,7 +229,17 @@ class UserDetailResponse(BaseModel):
     campaign_id: int | None = None
 
     # Recent transactions
-    recent_transactions: list[UserTransactionItem] = []
+    recent_transactions: list[UserTransactionItem] = Field(default_factory=list)
+    transactions: list[UserTransactionItem] = Field(default_factory=list)
+    payments: list[UserTransactionItem] = Field(default_factory=list)
+    purchases: list[UserTransactionItem] = Field(default_factory=list)
+
+    # Compatibility arrays for legacy admin UI
+    devices: list[dict[str, Any]] = Field(default_factory=list)
+    sessions: list[dict[str, Any]] = Field(default_factory=list)
+    audit_logs: list[dict[str, Any]] = Field(default_factory=list)
+    roles: list[str] = Field(default_factory=list)
+    permissions: list[str] = Field(default_factory=list)
 
     # Remnawave UUID
     remnawave_uuid: str | None = None
