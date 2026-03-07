@@ -52,6 +52,12 @@ def _get_column_udt_name(conn: Connection, table_name: str, column_name: str) ->
     return result.scalar()
 
 
+def _finalize_jsonb_array_column() -> None:
+    op.execute(sa.text("UPDATE tariffs SET bypass_whitelists = '[]'::jsonb WHERE bypass_whitelists IS NULL"))
+    op.execute(sa.text("ALTER TABLE tariffs ALTER COLUMN bypass_whitelists SET DEFAULT '[]'::jsonb"))
+    op.execute(sa.text('ALTER TABLE tariffs ALTER COLUMN bypass_whitelists SET NOT NULL'))
+
+
 def upgrade() -> None:
     conn = op.get_bind()
 
@@ -71,16 +77,88 @@ def upgrade() -> None:
         return
 
     column_udt_name = _get_column_udt_name(conn, 'tariffs', 'bypass_whitelists')
-    if column_udt_name == 'json':
-        empty_value = "'[]'::json"
-    elif column_udt_name == 'jsonb':
-        empty_value = "'[]'::jsonb"
-    else:
-        raise RuntimeError(f'Unsupported tariffs.bypass_whitelists type: {column_udt_name}')
 
-    op.execute(sa.text(f'UPDATE tariffs SET bypass_whitelists = {empty_value} WHERE bypass_whitelists IS NULL'))
-    op.execute(sa.text(f'ALTER TABLE tariffs ALTER COLUMN bypass_whitelists SET DEFAULT {empty_value}'))
-    op.execute(sa.text('ALTER TABLE tariffs ALTER COLUMN bypass_whitelists SET NOT NULL'))
+    if column_udt_name == 'jsonb':
+        _finalize_jsonb_array_column()
+        return
+
+    if column_udt_name == 'json':
+        op.execute(sa.text('ALTER TABLE tariffs ALTER COLUMN bypass_whitelists DROP DEFAULT'))
+        op.execute(
+            sa.text(
+                """
+                ALTER TABLE tariffs
+                ALTER COLUMN bypass_whitelists TYPE jsonb
+                USING COALESCE(bypass_whitelists, '[]'::json)::jsonb
+                """
+            )
+        )
+        _finalize_jsonb_array_column()
+        return
+
+    if column_udt_name in {'_text', '_varchar'}:
+        op.execute(sa.text('ALTER TABLE tariffs ALTER COLUMN bypass_whitelists DROP DEFAULT'))
+        op.execute(
+            sa.text(
+                """
+                ALTER TABLE tariffs
+                ALTER COLUMN bypass_whitelists TYPE jsonb
+                USING to_jsonb(COALESCE(bypass_whitelists, ARRAY[]::text[]))
+                """
+            )
+        )
+        _finalize_jsonb_array_column()
+        return
+
+    if column_udt_name in {'text', 'varchar', 'bpchar'}:
+        op.execute(sa.text('ALTER TABLE tariffs ALTER COLUMN bypass_whitelists DROP DEFAULT'))
+        op.execute(
+            sa.text(
+                """
+                ALTER TABLE tariffs
+                ALTER COLUMN bypass_whitelists TYPE jsonb
+                USING CASE
+                    WHEN bypass_whitelists IS NULL OR btrim(bypass_whitelists) = '' THEN '[]'::jsonb
+                    WHEN left(btrim(bypass_whitelists), 1) = '[' THEN bypass_whitelists::jsonb
+                    ELSE jsonb_build_array(btrim(bypass_whitelists))
+                END
+                """
+            )
+        )
+        _finalize_jsonb_array_column()
+        return
+
+    if column_udt_name == 'bool':
+        op.execute(sa.text('ALTER TABLE tariffs ALTER COLUMN bypass_whitelists DROP DEFAULT'))
+        op.execute(
+            sa.text(
+                """
+                ALTER TABLE tariffs
+                ALTER COLUMN bypass_whitelists TYPE jsonb
+                USING CASE
+                    WHEN bypass_whitelists IS NULL THEN '[]'::jsonb
+                    ELSE '[]'::jsonb
+                END
+                """
+            )
+        )
+        _finalize_jsonb_array_column()
+        return
+
+    op.execute(sa.text('ALTER TABLE tariffs ALTER COLUMN bypass_whitelists DROP DEFAULT'))
+    op.execute(
+        sa.text(
+            """
+            ALTER TABLE tariffs
+            ALTER COLUMN bypass_whitelists TYPE jsonb
+            USING CASE
+                WHEN bypass_whitelists IS NULL THEN '[]'::jsonb
+                ELSE '[]'::jsonb
+            END
+            """
+        )
+    )
+    _finalize_jsonb_array_column()
 
 
 def downgrade() -> None:
