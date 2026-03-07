@@ -227,6 +227,7 @@ async def get_tariff(
         allow_traffic_topup=tariff.allow_traffic_topup,
         family_enabled=tariff.family_enabled,
         family_max_members=tariff.family_max_members,
+        max_shared_members=getattr(tariff, 'max_shared_members', 0) or 0,
         traffic_topup_enabled=tariff.traffic_topup_enabled,
         traffic_topup_packages=tariff.traffic_topup_packages or {},
         max_topup_traffic_gb=tariff.max_topup_traffic_gb,
@@ -258,6 +259,7 @@ async def get_tariff(
         daily_price_kopeks=tariff.daily_price_kopeks,
         # Режим сброса трафика
         traffic_reset_mode=tariff.traffic_reset_mode,
+        external_squad_uuid=getattr(tariff, 'external_squad_uuid', None),
         created_at=tariff.created_at,
         updated_at=tariff.updated_at,
     )
@@ -293,6 +295,7 @@ async def create_new_tariff(
         allow_traffic_topup=request.allow_traffic_topup,
         family_enabled=request.family_enabled,
         family_max_members=request.family_max_members,
+        max_shared_members=request.max_shared_members,
         traffic_topup_enabled=request.traffic_topup_enabled,
         traffic_topup_packages=request.traffic_topup_packages,
         max_topup_traffic_gb=request.max_topup_traffic_gb,
@@ -321,6 +324,7 @@ async def create_new_tariff(
         daily_price_kopeks=request.daily_price_kopeks,
         # Режим сброса трафика
         traffic_reset_mode=request.traffic_reset_mode,
+        external_squad_uuid=request.external_squad_uuid,
     )
 
     logger.info('Admin created tariff', admin_id=admin.id, tariff_id=tariff.id, tariff_name=tariff.name)
@@ -361,6 +365,8 @@ async def update_existing_tariff(
         updates['family_enabled'] = request.family_enabled
     if request.family_max_members is not None:
         updates['family_max_members'] = request.family_max_members
+    if request.max_shared_members is not None:
+        updates['max_shared_members'] = request.max_shared_members
 
     effective_family_enabled = updates.get('family_enabled', tariff.family_enabled)
     effective_family_max_members = updates.get('family_max_members', tariff.family_max_members)
@@ -424,6 +430,8 @@ async def update_existing_tariff(
     # Режим сброса трафика (None допускается как значение для сброса к глобальной настройке)
     if 'traffic_reset_mode' in request.model_fields_set:
         updates['traffic_reset_mode'] = request.traffic_reset_mode
+    if 'external_squad_uuid' in request.model_fields_set:
+        updates['external_squad_uuid'] = request.external_squad_uuid
 
     if updates:
         await update_tariff(db, tariff, **updates)

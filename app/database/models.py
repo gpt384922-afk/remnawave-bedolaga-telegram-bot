@@ -861,6 +861,7 @@ class Tariff(Base):
     allow_traffic_topup = Column(Boolean, default=True, nullable=False)
     family_enabled = Column(Boolean, default=False, nullable=False)
     family_max_members = Column(Integer, default=0, nullable=False)
+    max_shared_members = Column(Integer, default=0, nullable=False)
 
     # Р”РѕРєСѓРїРєР° С‚СЂР°С„РёРєР°
     traffic_topup_enabled = Column(Boolean, default=False, nullable=False)  # Р Р°Р·СЂРµС€РµРЅР° Р»Рё РґРѕРєСѓРїРєР° С‚СЂР°С„РёРєР°
@@ -887,6 +888,7 @@ class Tariff(Base):
 
     # Р РµР¶РёРј СЃР±СЂРѕСЃР° С‚СЂР°С„РёРєР°: DAY, WEEK, MONTH, NO_RESET (РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ Р±РµСЂС‘С‚СЃСЏ РёР· РєРѕРЅС„РёРіР°)
     traffic_reset_mode = Column(String(20), nullable=True, default=None)  # None = РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ РіР»РѕР±Р°Р»СЊРЅСѓСЋ РЅР°СЃС‚СЂРѕР№РєСѓ
+    external_squad_uuid = Column(String(255), nullable=True, default=None)
 
     created_at = Column(AwareDateTime(), default=func.now())
     updated_at = Column(AwareDateTime(), default=func.now(), onupdate=func.now())

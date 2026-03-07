@@ -190,6 +190,7 @@ async def create_tariff(
     allow_traffic_topup: bool = True,
     family_enabled: bool = False,
     family_max_members: int = 0,
+    max_shared_members: int = 0,
     promo_group_ids: list[int] | None = None,
     traffic_topup_enabled: bool = False,
     traffic_topup_packages: dict[str, int] | None = None,
@@ -208,6 +209,7 @@ async def create_tariff(
     max_traffic_gb: int = 1000,
     # Режим сброса трафика
     traffic_reset_mode: str | None = None,  # DAY, WEEK, MONTH, NO_RESET, None = глобальная настройка
+    external_squad_uuid: str | None = None,
 ) -> Tariff:
     """Создает новый тариф."""
     normalized_prices = _normalize_period_prices(period_prices)
@@ -231,6 +233,7 @@ async def create_tariff(
         allow_traffic_topup=allow_traffic_topup,
         family_enabled=family_enabled,
         family_max_members=max(0, family_max_members),
+        max_shared_members=max(0, max_shared_members),
         traffic_topup_enabled=traffic_topup_enabled,
         traffic_topup_packages=traffic_topup_packages or {},
         max_topup_traffic_gb=max(0, max_topup_traffic_gb),
@@ -248,6 +251,7 @@ async def create_tariff(
         max_traffic_gb=max(1, max_traffic_gb),
         # Режим сброса трафика
         traffic_reset_mode=traffic_reset_mode,
+        external_squad_uuid=external_squad_uuid,
     )
 
     db.add(tariff)
@@ -298,6 +302,7 @@ async def update_tariff(
     allow_traffic_topup: bool | None = None,
     family_enabled: bool | None = None,
     family_max_members: int | None = None,
+    max_shared_members: int | None = None,
     promo_group_ids: list[int] | None = None,
     traffic_topup_enabled: bool | None = None,
     traffic_topup_packages: dict[str, int] | None = None,
@@ -316,6 +321,7 @@ async def update_tariff(
     max_traffic_gb: int | None = None,
     # Режим сброса трафика
     traffic_reset_mode: str | None = ...,  # ... = не передан, None = сбросить к глобальной настройке
+    external_squad_uuid: str | None = ...,  # ... = не передан, None = сбросить
 ) -> Tariff:
     """Обновляет существующий тариф."""
     if name is not None:
@@ -348,6 +354,8 @@ async def update_tariff(
         tariff.family_enabled = family_enabled
     if family_max_members is not None:
         tariff.family_max_members = max(0, family_max_members)
+    if max_shared_members is not None:
+        tariff.max_shared_members = max(0, max_shared_members)
     if period_prices is not None:
         tariff.period_prices = _normalize_period_prices(period_prices)
     if tier_level is not None:
@@ -385,6 +393,8 @@ async def update_tariff(
     # Режим сброса трафика
     if traffic_reset_mode is not ...:
         tariff.traffic_reset_mode = traffic_reset_mode
+    if external_squad_uuid is not ...:
+        tariff.external_squad_uuid = external_squad_uuid
 
     # Обновляем промогруппы если указаны
     if promo_group_ids is not None:
