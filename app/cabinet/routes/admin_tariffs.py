@@ -104,6 +104,20 @@ def _period_prices_to_dict(period_prices: list[PeriodPrice]) -> dict:
     return {str(pp.days): pp.price_kopeks for pp in period_prices}
 
 
+def _normalize_bypass_whitelists(value: object) -> list[str]:
+    """Normalize bypass whitelist identifiers loaded from DB before returning them."""
+    if not isinstance(value, list):
+        return []
+
+    normalized: list[str] = []
+    for item in value:
+        normalized_item = str(item).strip()
+        if normalized_item:
+            normalized.append(normalized_item)
+
+    return normalized
+
+
 @router.get('', response_model=TariffListResponse)
 async def list_tariffs(
     include_inactive: bool = True,
@@ -190,6 +204,7 @@ async def get_tariff(
         )
 
     allowed_squads = tariff.allowed_squads or []
+    bypass_whitelists = _normalize_bypass_whitelists(getattr(tariff, 'bypass_whitelists', []))
     server_traffic_limits = tariff.server_traffic_limits or {}
     servers = await _get_tariff_servers(db, allowed_squads, server_traffic_limits)
     promo_groups = await _get_tariff_promo_groups(db, tariff)
@@ -223,6 +238,7 @@ async def get_tariff(
         display_order=tariff.display_order,
         period_prices=_period_prices_to_list(tariff.period_prices),
         allowed_squads=allowed_squads,
+        bypass_whitelists=bypass_whitelists,
         server_traffic_limits=server_limits_response,
         servers=servers,
         promo_groups=promo_groups,
@@ -287,6 +303,7 @@ async def create_new_tariff(
         tier_level=request.tier_level,
         period_prices=period_prices_dict,
         allowed_squads=request.allowed_squads,
+        bypass_whitelists=request.bypass_whitelists,
         server_traffic_limits=server_limits_dict,
         promo_group_ids=request.promo_group_ids if request.promo_group_ids else None,
         # Произвольное количество дней
@@ -374,6 +391,8 @@ async def update_existing_tariff(
         updates['period_prices'] = _period_prices_to_dict(request.period_prices)
     if request.allowed_squads is not None:
         updates['allowed_squads'] = request.allowed_squads
+    if 'bypass_whitelists' in request.model_fields_set:
+        updates['bypass_whitelists'] = request.bypass_whitelists or []
     if request.server_traffic_limits is not None:
         # Преобразуем ServerTrafficLimit в dict для хранения
         updates['server_traffic_limits'] = {

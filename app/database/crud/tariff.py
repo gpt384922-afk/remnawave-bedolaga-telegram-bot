@@ -29,6 +29,24 @@ def _normalize_period_prices(period_prices: dict[int, int] | None) -> dict[str, 
     return normalized
 
 
+def _normalize_bypass_whitelists(bypass_whitelists: list[str] | None) -> list[str]:
+    """Normalize bypass whitelist identifiers to a clean string list."""
+    if not bypass_whitelists:
+        return []
+
+    normalized: list[str] = []
+
+    for value in bypass_whitelists:
+        if value is None:
+            continue
+
+        normalized_value = str(value).strip()
+        if normalized_value:
+            normalized.append(normalized_value)
+
+    return normalized
+
+
 async def get_all_tariffs(
     db: AsyncSession,
     *,
@@ -164,6 +182,7 @@ async def create_tariff(
     device_price_kopeks: int | None = None,
     max_device_limit: int | None = None,
     allowed_squads: list[str] | None = None,
+    bypass_whitelists: list[str] | None = None,
     server_traffic_limits: dict[str, dict] | None = None,
     period_prices: dict[int, int] | None = None,
     tier_level: int = 1,
@@ -192,6 +211,7 @@ async def create_tariff(
 ) -> Tariff:
     """Создает новый тариф."""
     normalized_prices = _normalize_period_prices(period_prices)
+    normalized_bypass_whitelists = _normalize_bypass_whitelists(bypass_whitelists)
 
     tariff = Tariff(
         name=name.strip(),
@@ -203,6 +223,7 @@ async def create_tariff(
         device_price_kopeks=device_price_kopeks,
         max_device_limit=max_device_limit,
         allowed_squads=allowed_squads or [],
+        bypass_whitelists=normalized_bypass_whitelists,
         server_traffic_limits=server_traffic_limits or {},
         period_prices=normalized_prices,
         tier_level=max(1, tier_level),
@@ -269,6 +290,7 @@ async def update_tariff(
     device_price_kopeks: int | None = ...,  # ... = не передан, None = сбросить
     max_device_limit: int | None = ...,  # ... = не передан, None = сбросить (без лимита)
     allowed_squads: list[str] | None = None,
+    bypass_whitelists: list[str] | None = None,
     server_traffic_limits: dict[str, dict] | None = None,
     period_prices: dict[int, int] | None = None,
     tier_level: int | None = None,
@@ -316,6 +338,8 @@ async def update_tariff(
         tariff.max_device_limit = max_device_limit
     if allowed_squads is not None:
         tariff.allowed_squads = allowed_squads
+    if bypass_whitelists is not None:
+        tariff.bypass_whitelists = _normalize_bypass_whitelists(bypass_whitelists)
     if server_traffic_limits is not None:
         tariff.server_traffic_limits = server_traffic_limits
     if allow_traffic_topup is not None:

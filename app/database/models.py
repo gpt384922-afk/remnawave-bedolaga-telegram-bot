@@ -840,6 +840,11 @@ class Tariff(Base):
 
     # РЎРєРІР°РґС‹ (СЃРµСЂРІРµСЂС‹) РґРѕСЃС‚СѓРїРЅС‹Рµ РІ С‚Р°СЂРёС„Рµ
     allowed_squads = Column(JSON, default=list)  # СЃРїРёСЃРѕРє UUID СЃРєРІР°РґРѕРІ
+    bypass_whitelists = Column(
+        JSON().with_variant(JSONB, 'postgresql'),
+        default=list,
+        nullable=False,
+    )
 
     # Р›РёРјРёС‚С‹ С‚СЂР°С„РёРєР° РїРѕ СЃРµСЂРІРµСЂР°Рј (JSON: {"uuid": {"traffic_limit_gb": 100}, ...})
     # Р•СЃР»Рё СЃРµСЂРІРµСЂ РЅРµ СѓРєР°Р·Р°РЅ - РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РѕР±С‰РёР№ traffic_limit_gb

@@ -97,6 +97,7 @@ class TariffDetailResponse(BaseModel):
     display_order: int
     period_prices: list[PeriodPrice]
     allowed_squads: list[str]  # UUIDs
+    bypass_whitelists: list[str] = Field(default_factory=list)
     server_traffic_limits: dict[str, ServerTrafficLimit] = Field(default_factory=dict)  # {uuid: {traffic_limit_gb}}
     servers: list[ServerInfo]
     promo_groups: list[PromoGroupInfo]
@@ -142,6 +143,7 @@ class TariffCreateRequest(BaseModel):
     tier_level: int = Field(1, ge=1, le=10)
     period_prices: list[PeriodPrice] = Field(default_factory=list)
     allowed_squads: list[str] = Field(default_factory=list, description='Server UUIDs')
+    bypass_whitelists: list[str] = Field(default_factory=list)
     server_traffic_limits: dict[str, ServerTrafficLimit] = Field(
         default_factory=dict, description='Per-server traffic limits'
     )
@@ -183,6 +185,7 @@ class TariffUpdateRequest(BaseModel):
     display_order: int | None = Field(None, ge=0)
     period_prices: list[PeriodPrice] | None = None
     allowed_squads: list[str] | None = None
+    bypass_whitelists: list[str] | None = None
     server_traffic_limits: dict[str, ServerTrafficLimit] | None = None
     promo_group_ids: list[int] | None = None
     # Произвольное количество дней
