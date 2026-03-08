@@ -919,12 +919,14 @@ class BackupService:
 
         restored_records = 0
         restored_tables = 0
+        id_remaps: dict[str, dict[Any, Any]] = {}
 
         async with AsyncSessionLocal() as db:
             try:
                 if clear_existing:
                     logger.warning('🗑️ Очищаем существующие данные...')
                     await self._clear_database_tables(db, backup_data)
+                    await db.commit()
 
                 models_for_restore = self._get_models_for_backup(True)
                 models_by_table = {model.__tablename__: model for model in models_for_restore}
@@ -948,6 +950,7 @@ class BackupService:
                         table_name,
                         records,
                         clear_existing,
+                        id_remaps=id_remaps,
                     )
                     restored_records += restored
 
@@ -980,6 +983,7 @@ class BackupService:
                         table_name,
                         records,
                         clear_existing,
+                        id_remaps=id_remaps,
                     )
                     restored_records += restored
 
@@ -987,15 +991,13 @@ class BackupService:
                         restored_tables += 1
                         logger.info('✅ Таблица восстановлена', table_name=table_name)
 
-                # Flush все изменения перед обновлением реферальных связей
-                await db.flush()
-
                 await self._update_user_referrals(db, backup_data)
 
                 assoc_tables, assoc_records = await self._restore_association_tables(
                     db,
                     association_data,
                     clear_existing,
+                    id_remaps=id_remaps,
                 )
                 restored_tables += assoc_tables
                 restored_records += assoc_records
@@ -1054,100 +1056,96 @@ class BackupService:
         logger.info(message)
         return True, message
 
+
     async def _restore_users_without_referrals(self, db: AsyncSession, backup_data: dict, models_by_table: dict):
         users_data = backup_data.get('users', [])
         if not users_data:
             return
 
-        logger.info('👥 Восстанавливаем пользователей без реферальных связей', users_data_count=len(users_data))
+        logger.info('Restoring users without referrals', users_data_count=len(users_data))
 
         User = models_by_table['users']
 
         for user_data in users_data:
+            processed_data = self._process_record_data(user_data, User, 'users')
+            processed_data['referred_by_id'] = None
+            record_identity = self._build_record_identity('users', processed_data, ['id'])
+
             try:
-                processed_data = self._process_record_data(user_data, User, 'users')
-                processed_data['referred_by_id'] = None
+                existing = None
+                if processed_data.get('id') is not None:
+                    existing_result = await db.execute(select(User).where(User.id == processed_data['id']))
+                    existing = existing_result.scalar_one_or_none()
 
-                if 'id' in processed_data:
-                    existing_user = await db.execute(select(User).where(User.id == processed_data['id']))
-                    existing = existing_user.scalar_one_or_none()
-
-                    if existing:
-                        for key, value in processed_data.items():
-                            if key != 'id':
-                                setattr(existing, key, value)
-                    else:
-                        instance = User(**processed_data)
-                        try:
-                            async with db.begin_nested():
-                                db.add(instance)
-                                await db.flush()
-                        except IntegrityError:
-                            logger.warning(
-                                'Дубликат пользователя (id telegram_id=), пропускаем',
-                                processed_data=processed_data.get('id'),
-                                processed_data_2=processed_data.get('telegram_id'),
-                            )
-                            continue
+                if existing:
+                    for key, value in processed_data.items():
+                        if key != 'id':
+                            setattr(existing, key, value)
                 else:
-                    instance = User(**processed_data)
-                    try:
-                        async with db.begin_nested():
-                            db.add(instance)
-                            await db.flush()
-                    except IntegrityError:
-                        logger.warning(
-                            'Дубликат пользователя (telegram_id=), пропускаем',
-                            processed_data=processed_data.get('telegram_id'),
-                        )
-                        continue
+                    db.add(User(**processed_data))
+                    await db.flush()
 
+                await db.commit()
+            except IntegrityError as e:
+                await db.rollback()
+                logger.warning(
+                    'User restore conflict, skipping',
+                    record_identity=record_identity,
+                    error=str(e),
+                )
+                continue
             except Exception as e:
-                logger.error('Ошибка при восстановлении пользователя', error=e)
+                await db.rollback()
+                logger.error('Failed to restore user', error=e)
                 raise
 
-        try:
-            await db.flush()
-        except IntegrityError as e:
-            logger.warning('IntegrityError при flush пользователей, откатываем', e=e)
-            await db.rollback()
-        logger.info('✅ Пользователи без реферальных связей восстановлены')
+        logger.info('Users without referrals restored')
+
 
     async def _update_user_referrals(self, db: AsyncSession, backup_data: dict):
         users_data = backup_data.get('users', [])
         if not users_data:
             return
 
-        logger.info('🔗 Обновляем реферальные связи пользователей')
+        logger.info('Updating user referral links')
 
         for user_data in users_data:
-            try:
-                referred_by_id = user_data.get('referred_by_id')
-                user_id = user_data.get('id')
+            referred_by_id = user_data.get('referred_by_id')
+            user_id = user_data.get('id')
 
-                if referred_by_id and user_id:
-                    referrer_result = await db.execute(select(User).where(User.id == referred_by_id))
-                    referrer = referrer_result.scalar_one_or_none()
-
-                    if referrer:
-                        user_result = await db.execute(select(User).where(User.id == user_id))
-                        user = user_result.scalar_one_or_none()
-
-                        if user:
-                            user.referred_by_id = referred_by_id
-                        else:
-                            logger.warning('Пользователь не найден для обновления реферальной связи', user_id=user_id)
-                    else:
-                        logger.warning(
-                            'Реферер не найден для пользователя', referred_by_id=referred_by_id, user_id=user_id
-                        )
-
-            except Exception as e:
-                logger.error('Ошибка при обновлении реферальной связи', error=e)
+            if not referred_by_id or not user_id:
                 continue
 
-        await db.flush()
-        logger.info('✅ Реферальные связи обновлены')
+            try:
+                referrer_result = await db.execute(select(User).where(User.id == referred_by_id))
+                referrer = referrer_result.scalar_one_or_none()
+                if not referrer:
+                    logger.warning('Referrer not found for user', referred_by_id=referred_by_id, user_id=user_id)
+                    continue
+
+                user_result = await db.execute(select(User).where(User.id == user_id))
+                user = user_result.scalar_one_or_none()
+                if not user:
+                    logger.warning('User not found for referral update', user_id=user_id)
+                    continue
+
+                user.referred_by_id = referred_by_id
+                await db.commit()
+            except IntegrityError as e:
+                await db.rollback()
+                logger.warning(
+                    'Referral restore conflict, skipping',
+                    user_id=user_id,
+                    referred_by_id=referred_by_id,
+                    error=str(e),
+                )
+                continue
+            except Exception as e:
+                await db.rollback()
+                logger.error('Failed to update referral link', error=e)
+                continue
+
+        logger.info('Referral links updated')
 
     def _process_record_data(self, record_data: dict, model, table_name: str) -> dict:
         processed_data = {}
@@ -1219,6 +1217,122 @@ class BackupService:
     def _get_primary_key_columns(self, model) -> list[str]:
         return [col.name for col in model.__table__.columns if col.primary_key]
 
+    def _get_natural_unique_key_columns(self, table_name: str) -> tuple[tuple[str, ...], ...]:
+        natural_keys: dict[str, tuple[tuple[str, ...], ...]] = {
+            'server_squads': (('squad_uuid',),),
+        }
+        return natural_keys.get(table_name, ())
+
+    def _build_record_identity(
+        self,
+        table_name: str,
+        processed_data: dict[str, Any],
+        pk_cols: list[str],
+    ) -> dict[str, Any]:
+        identity: dict[str, Any] = {}
+
+        for key_group in self._get_natural_unique_key_columns(table_name):
+            for key in key_group:
+                value = processed_data.get(key)
+                if value is not None:
+                    identity[key] = value
+
+        for pk_col in pk_cols:
+            value = processed_data.get(pk_col)
+            if value is not None:
+                identity[pk_col] = value
+
+        if identity:
+            return identity
+
+        for fallback_key in ('id', 'uuid', 'telegram_id', 'email', 'name'):
+            value = processed_data.get(fallback_key)
+            if value is not None:
+                identity[fallback_key] = value
+
+        return identity or {'table_name': table_name}
+
+    async def _find_existing_record(
+        self,
+        db: AsyncSession,
+        model,
+        table_name: str,
+        processed_data: dict[str, Any],
+        pk_cols: list[str],
+    ) -> tuple[Any | None, str | None]:
+        for key_group in self._get_natural_unique_key_columns(table_name):
+            if not all(processed_data.get(key) is not None for key in key_group):
+                continue
+
+            stmt = select(model).where(*[getattr(model, key) == processed_data[key] for key in key_group])
+            result = await db.execute(stmt)
+            existing = result.scalar_one_or_none()
+            if existing is not None:
+                return existing, f'natural:{",".join(key_group)}'
+
+        if pk_cols and all(processed_data.get(col) is not None for col in pk_cols):
+            stmt = select(model).where(*[getattr(model, col) == processed_data[col] for col in pk_cols])
+            result = await db.execute(stmt)
+            existing = result.scalar_one_or_none()
+            if existing is not None:
+                return existing, f'primary:{",".join(pk_cols)}'
+
+        return None, None
+
+    def _register_restore_pk_remap(
+        self,
+        table_name: str,
+        pk_cols: list[str],
+        processed_data: dict[str, Any],
+        actual_record,
+        id_remaps: dict[str, dict[Any, Any]] | None,
+    ) -> None:
+        if not id_remaps or len(pk_cols) != 1:
+            return
+
+        pk_col = pk_cols[0]
+        backup_pk = processed_data.get(pk_col)
+        actual_pk = getattr(actual_record, pk_col, None)
+
+        if backup_pk is None or actual_pk is None:
+            return
+
+        id_remaps.setdefault(table_name, {})[backup_pk] = actual_pk
+
+    def _apply_restore_id_remaps(
+        self,
+        table_name: str,
+        values: dict[str, Any],
+        id_remaps: dict[str, dict[Any, Any]] | None,
+    ) -> dict[str, Any]:
+        if not id_remaps:
+            return values
+
+        fk_remaps: dict[str, dict[str, str]] = {
+            'subscription_servers': {'server_squad_id': 'server_squads'},
+            'server_squad_promo_groups': {'server_squad_id': 'server_squads'},
+        }
+
+        remapped_values = values.copy()
+        for field_name, source_table in fk_remaps.get(table_name, {}).items():
+            original_value = remapped_values.get(field_name)
+            if original_value is None:
+                continue
+
+            new_value = id_remaps.get(source_table, {}).get(original_value)
+            if new_value is not None and new_value != original_value:
+                logger.info(
+                    'Remapping FK during restore',
+                    table_name=table_name,
+                    field_name=field_name,
+                    original_value=original_value,
+                    new_value=new_value,
+                    source_table=source_table,
+                )
+                remapped_values[field_name] = new_value
+
+        return remapped_values
+
     async def _export_association_tables(self, db: AsyncSession) -> dict[str, list[dict[str, Any]]]:
         association_data: dict[str, list[dict[str, Any]]] = {}
 
@@ -1234,8 +1348,13 @@ class BackupService:
 
         return association_data
 
+
     async def _restore_association_tables(
-        self, db: AsyncSession, association_data: dict[str, list[dict[str, Any]]], clear_existing: bool
+        self,
+        db: AsyncSession,
+        association_data: dict[str, list[dict[str, Any]]],
+        clear_existing: bool,
+        id_remaps: dict[str, dict[Any, Any]] | None = None,
     ) -> tuple[int, int]:
         if not association_data:
             return 0, 0
@@ -1248,7 +1367,13 @@ class BackupService:
                 continue
             col_names = [col.name for col in table_obj.columns]
             restored = await self._restore_association_table(
-                db, table_obj, table_name, association_data[table_name], clear_existing, col_names
+                db,
+                table_obj,
+                table_name,
+                association_data[table_name],
+                clear_existing,
+                col_names,
+                id_remaps=id_remaps,
             )
             restored_tables += 1
             restored_records += restored
@@ -1263,20 +1388,23 @@ class BackupService:
         records: list[dict[str, Any]],
         clear_existing: bool,
         col_names: list[str],
+        id_remaps: dict[str, dict[Any, Any]] | None = None,
     ) -> int:
         if not records:
             return 0
 
         if clear_existing:
             await db.execute(table_obj.delete())
+            await db.commit()
 
         restored = 0
 
         for record in records:
             values = {col: record.get(col) for col in col_names}
+            values = self._apply_restore_id_remaps(table_name, values, id_remaps)
 
             if any(v is None for v in values.values()):
-                logger.warning('Пропущена некорректная запись', table_name=table_name, record=record)
+                logger.warning('Skipping invalid association record', table_name=table_name, record=record)
                 continue
 
             try:
@@ -1289,87 +1417,107 @@ class BackupService:
                 existing = await db.execute(exists_stmt)
 
                 if existing.scalar_one_or_none() is not None:
-                    logger.debug('Запись уже существует', table_name=table_name, values=values)
+                    logger.debug('Association record already exists', table_name=table_name, values=values)
                     continue
 
                 try:
-                    async with db.begin_nested():
-                        await db.execute(table_obj.insert().values(**values))
+                    await db.execute(table_obj.insert().values(**values))
+                    await db.commit()
                     restored += 1
-                except IntegrityError:
-                    logger.warning('Пропускаем связь (FK или дубликат)', table_name=table_name, values=values)
+                except IntegrityError as exc:
+                    await db.rollback()
+                    logger.warning(
+                        'Association restore conflict, skipping',
+                        table_name=table_name,
+                        values=values,
+                        error=str(exc),
+                    )
                     continue
             except Exception as e:
-                logger.error('Ошибка при восстановлении связи', table_name=table_name, values=values, e=e)
+                await db.rollback()
+                logger.error('Failed to restore association record', table_name=table_name, values=values, e=e)
                 raise
 
         return restored
 
+
     async def _restore_table_records(
-        self, db: AsyncSession, model, table_name: str, records: list[dict[str, Any]], clear_existing: bool
+        self,
+        db: AsyncSession,
+        model,
+        table_name: str,
+        records: list[dict[str, Any]],
+        clear_existing: bool,
+        id_remaps: dict[str, dict[Any, Any]] | None = None,
     ) -> int:
         restored_count = 0
 
-        # Кешируем существующие tariff_id для проверки FK
         existing_tariff_ids = set()
         if table_name == 'subscriptions':
             try:
                 result = await db.execute(select(Tariff.id))
                 existing_tariff_ids = {row[0] for row in result.fetchall()}
                 logger.info(
-                    '📋 Найдено существующих тарифов для валидации FK',
+                    'Loaded tariff IDs for FK validation',
                     existing_tariff_ids_count=len(existing_tariff_ids),
                 )
             except Exception as e:
-                logger.warning('⚠️ Не удалось получить список тарифов', error=e)
+                logger.warning('Failed to load tariff IDs', error=e)
 
         for record_data in records:
-            try:
-                processed_data = self._process_record_data(record_data, model, table_name)
+            processed_data = self._process_record_data(record_data, model, table_name)
+            processed_data = self._apply_restore_id_remaps(table_name, processed_data, id_remaps)
+            pk_cols = self._get_primary_key_columns(model)
+            record_identity = self._build_record_identity(table_name, processed_data, pk_cols)
 
-                # Валидация FK для subscriptions.tariff_id
+            try:
                 if table_name == 'subscriptions' and 'tariff_id' in processed_data:
                     tariff_id = processed_data.get('tariff_id')
                     if tariff_id is not None and tariff_id not in existing_tariff_ids:
                         logger.warning(
-                            '⚠️ Тариф не найден, устанавливаем tariff_id=NULL для подписки', tariff_id=tariff_id
+                            'Tariff missing, setting tariff_id=NULL for subscription', tariff_id=tariff_id
                         )
                         processed_data['tariff_id'] = None
 
-                pk_cols = self._get_primary_key_columns(model)
+                existing, match_source = await self._find_existing_record(db, model, table_name, processed_data, pk_cols)
 
-                if pk_cols and all(col in processed_data for col in pk_cols):
-                    where_clause = [getattr(model, col) == processed_data[col] for col in pk_cols]
-                    existing_record = await db.execute(select(model).where(*where_clause))
-                    existing = existing_record.scalar_one_or_none()
+                if existing is not None:
+                    for key, value in processed_data.items():
+                        if key not in pk_cols:
+                            setattr(existing, key, value)
 
-                    if existing:
-                        for key, value in processed_data.items():
-                            if key not in pk_cols:
-                                setattr(existing, key, value)
-                    else:
-                        instance = model(**processed_data)
-                        try:
-                            async with db.begin_nested():
-                                db.add(instance)
-                                await db.flush()
-                        except IntegrityError:
-                            # Unique constraint conflict — record exists with different PK
-                            logger.warning(
-                                'Дубликат по уникальному ключу в %s (PK=%s), пропускаем',
-                                table_name,
-                                {col: processed_data.get(col) for col in pk_cols},
-                            )
-                            continue
+                    self._register_restore_pk_remap(table_name, pk_cols, processed_data, existing, id_remaps)
+                    await db.commit()
+
+                    if match_source and match_source.startswith('natural:'):
+                        logger.info(
+                            'Record updated by natural key during restore',
+                            table_name=table_name,
+                            record_identity=record_identity,
+                            match_source=match_source,
+                            actual_pk={col: getattr(existing, col, None) for col in pk_cols},
+                        )
                 else:
                     instance = model(**processed_data)
                     db.add(instance)
+                    await db.flush()
+                    self._register_restore_pk_remap(table_name, pk_cols, processed_data, instance, id_remaps)
+                    await db.commit()
 
                 restored_count += 1
-
+            except IntegrityError as e:
+                await db.rollback()
+                logger.warning(
+                    'Record restore conflict, skipping',
+                    table_name=table_name,
+                    record_identity=record_identity,
+                    error=str(e),
+                )
+                continue
             except Exception as e:
-                logger.error('Ошибка восстановления записи в', table_name=table_name, error=e)
-                logger.error('Проблемные данные', record_data=record_data)
+                await db.rollback()
+                logger.error('Failed to restore table record', table_name=table_name, error=e)
+                logger.error('Problematic record data', record_data=record_data)
                 raise
 
         return restored_count
