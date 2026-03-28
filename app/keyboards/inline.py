@@ -724,6 +724,14 @@ def get_main_menu_keyboard(
             InlineKeyboardButton(text=texts.t('CONTESTS_BUTTON', '🎲 Конкурсы'), callback_data='contests_menu')
         )
 
+    if settings.PERSONAL_VPN_ENABLED:
+        paired_buttons.append(
+            InlineKeyboardButton(
+                text=texts.t('MENU_PERSONAL_VPN', '🔒 Личный VPN'),
+                callback_data='menu_personal_vpn',
+            )
+        )
+
     try:
         from app.services.support_settings_service import SupportSettingsService
 

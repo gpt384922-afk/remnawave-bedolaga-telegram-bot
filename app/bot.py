@@ -10,6 +10,7 @@ from app.handlers import (
     common,
     contests as user_contests,
     menu,
+    personal_vpn,
     polls as user_polls,
     promocode,
     referral,
@@ -166,6 +167,7 @@ async def setup_bot() -> tuple[Bot, Dispatcher]:
     dp.callback_query.middleware(SubscriptionStatusMiddleware())
     start.register_handlers(dp)
     menu.register_handlers(dp)
+    personal_vpn.register_handlers(dp)
     subscription.register_handlers(dp)
     balance.register_balance_handlers(dp)
     promocode.register_handlers(dp)
